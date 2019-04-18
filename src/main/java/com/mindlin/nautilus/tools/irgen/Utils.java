@@ -2,6 +2,7 @@ package com.mindlin.nautilus.tools.irgen;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,17 +14,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 public class Utils {
+	public static boolean MP = false;
+	private static final boolean VERBOSE = true;
 	private Utils() {
 	}
 	
@@ -34,52 +37,18 @@ public class Utils {
 		return result;
 	}
 	
-	public static void writeModifier(Writer out, Modifier modifier) throws IOException {
-		switch (modifier) {
-		case ABSTRACT:
-			out.append("abstract ");
-			break;
-		case DEFAULT:
-			out.append("default ");
-			break;
-		case FINAL:
-			out.append("final ");
-			break;
-		case NATIVE:
-			out.append("native ");
-			break;
-		case PRIVATE:
-			out.append("private ");
-			break;
-		case PROTECTED:
-			out.append("protected ");
-			break;
-		case PUBLIC:
-			out.append("public ");
-			break;
-		case STATIC:
-			out.append("static ");
-			break;
-		case STRICTFP:
-			out.append("strictfp ");
-			break;
-		case SYNCHRONIZED:
-			out.append("synchronized ");
-			break;
-		case TRANSIENT:
-			out.append("transient ");
-			break;
-		case VOLATILE:
-			out.append("volatile ");
-			break;
-		default:
-			break;
-		}
+	public static boolean isVerbose() {
+		return VERBOSE;
 	}
 	
-	public static void writeModifiers(Writer out, Set<Modifier> modifiers) throws IOException {
-		for (Modifier modifier : modifiers)
-			writeModifier(out, modifier);
+	public static <T> Stream<T> stream(Collection<T> src) {
+		return MP ? src.parallelStream() : src.stream();
+	}
+	
+	public static void writeModifiers(Writer out, int modifiers) throws IOException {
+		out.append(Modifier.toString(modifiers));
+		if (modifiers != 0)
+			out.append(" ");
 	}
 	
 	public static void writeList(Writer out, Iterable<String> values, String separator) throws IOException {
@@ -200,6 +169,13 @@ public class Utils {
 		return result;
 	}
 	
+	public static <T, E extends Exception, U> List<U> emap(Iterable<? extends T> data, EFunction<T, E, U> mapper) throws E {
+		List<U> result = new ArrayList<>();
+		for (T value : data)
+			result.add(mapper.apply(value));
+		return result;
+	}
+	
 	public static boolean isReserved(String raw) {
 		switch (raw) {
 			case "public":
@@ -229,5 +205,10 @@ public class Utils {
 	
 	public static String getName(Element element) {
 		return ((TypeElement) element).getQualifiedName().toString();
+	}
+	
+	@FunctionalInterface
+	public static interface EFunction<T, E extends Exception, R> {
+		R apply(T t) throws E;
 	}
 }
