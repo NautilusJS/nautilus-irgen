@@ -1,9 +1,11 @@
 package com.mindlin.nautilus.tools.irgen;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -13,10 +15,10 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
+import com.mindlin.nautilus.tools.irgen.ir.Orderable;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
 
@@ -24,6 +26,20 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 	
 	public TreeBuilderProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv) {
 		super(procEnv, annotation, roundEnv);
+	}
+	
+	protected TreeSpec.Kind getKind() {
+		String name = Utils.getName(this.annotation);
+		switch (name) {
+			case IRTypes.TREE_IMPL:
+				return TreeSpec.Kind.IMPL;
+			case IRTypes.TREE_NOIMPL:
+				return TreeSpec.Kind.NO_IMPL;
+			case IRTypes.TREE_ADT:
+				return TreeSpec.Kind.ADT;
+			default:
+				return null;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -83,6 +99,7 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 		
 		
 		for (AnnotationMirror mirror : elements.getAllAnnotationMirrors(method)) {
+			Logger logger = getLogger().withTarget(method, mirror);
 			String name = Utils.getName(mirror.getAnnotationType());
 			Map<String, ? extends AnnotationValue> values = Utils.derefValues(mirror.getElementValues());
 			switch (name) {
@@ -96,14 +113,14 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 					try {
 						result.before = values.get("value").getValue().toString();
 					} catch (NullPointerException e) {
-						getLogger().withSite(mirror).error("Missing value: %s", e);
+						logger.error("Missing value: %s", e);
 					}
 					continue;
 				case IRTypes.ORDERING_AFTER:
 					try {
 						result.after = values.get("value").getValue().toString();
 					} catch (NullPointerException e) {
-						getLogger().withTarget(method, mirror).error("Missing value: %s", e);
+						logger.error("Missing value: %s", e);
 					}
 					continue;
 				case IRTypes.ORDERING_FIRST:
