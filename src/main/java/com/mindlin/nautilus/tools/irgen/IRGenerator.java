@@ -49,8 +49,13 @@ public class IRGenerator extends AbstractProcessor {
 				continue;
 			}
 			
-			TreeSpec spec = processor.buildTreeSpec((TypeElement) target);
-			specMap.put(Utils.getName(target), spec);
+			try {
+				TreeSpec spec = processor.buildTreeSpec((TypeElement) target);
+				specMap.put(Utils.getName(target), spec);
+			} catch (Exception e) {
+				logger.error("Error reading @Tree.%s: %s", annotation.getSimpleName(), e.getLocalizedMessage());
+				throw e;
+			}
 		}
 		return specMap;
 	}
