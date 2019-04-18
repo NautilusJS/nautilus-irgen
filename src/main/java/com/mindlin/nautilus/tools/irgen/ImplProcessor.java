@@ -3,6 +3,7 @@ package com.mindlin.nautilus.tools.irgen;
 import static com.mindlin.nautilus.tools.irgen.Utils.invoke;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
@@ -428,10 +428,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			}
 			
 			@Override
-			protected Set<Modifier> getModifiers() {
-				Set<Modifier> result = new HashSet<>();
-				result.add(Modifier.PUBLIC);
-				return result;
+			protected int getModifiers() {
+				return Modifier.PUBLIC;
 			}
 
 			@Override
@@ -496,8 +494,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			}
 
 			@Override
-			protected Set<Modifier> getModifiers() {
-				return Utils.modifiers(Modifier.PROTECTED);
+			protected int getModifiers() {
+				return Modifier.PROTECTED;
 			}
 
 			@Override
@@ -524,7 +522,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			}
 			
 			@Override
-			protected Iterable<ParameterSpec> getParameters() {
+			protected Collection<ParameterSpec> getParameters() {
 				return Arrays.asList(new ParameterSpec(true, IRTypes.TREE_CLASS, "other"));
 			}
 
@@ -547,7 +545,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			}
 			
 			@Override
-			protected Iterable<ParameterSpec> getParameters() {
+			protected Collection<ParameterSpec> getParameters() {
 				return Arrays.asList(new ParameterSpec(true, TreeImplSpec.this.getBaseTreeType(), "other"));
 			}
 

@@ -2,16 +2,16 @@ package com.mindlin.nautilus.tools.irgen.ir;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
-import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
 
-import com.mindlin.nautilus.tools.irgen.IndentWriter;
 import com.mindlin.nautilus.tools.irgen.IRTypes;
+import com.mindlin.nautilus.tools.irgen.IndentWriter;
 import com.mindlin.nautilus.tools.irgen.Utils;
 
 public abstract class MethodSpec {
@@ -49,8 +49,7 @@ public abstract class MethodSpec {
 	public void write(IndentWriter out) throws IOException {
 		this.writeBefore(out);
 		
-		Set<Modifier> modifiers = this.getModifiers();
-		Utils.writeModifiers(out, modifiers);
+		Utils.writeModifiers(out, this.getModifiers());
 		
 		out.print(this.getReturnType());
 		out.space();
@@ -80,15 +79,13 @@ public abstract class MethodSpec {
 		}
 		
 		@Override
-		protected Iterable<ParameterSpec> getParameters() {
+		protected Collection<? extends ParameterSpec> getParameters() {
 			return Collections.emptyList();
 		}
 		
 		@Override
-		protected Set<Modifier> getModifiers() {
-			Set<Modifier> result = super.getModifiers();
-			result.add(Modifier.PUBLIC);
-			return result;
+		protected int getModifiers() {
+			return super.getModifiers() | Modifier.PUBLIC;
 		}
 	}
 	
@@ -101,8 +98,8 @@ public abstract class MethodSpec {
 		}
 		
 		@Override
-		protected Set<Modifier> getModifiers() {
-			return Utils.modifiers(Modifier.PUBLIC);
+		protected int getModifiers() {
+			return Modifier.PUBLIC;
 		}
 
 		@Override

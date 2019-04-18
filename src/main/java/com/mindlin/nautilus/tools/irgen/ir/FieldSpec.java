@@ -3,26 +3,24 @@ package com.mindlin.nautilus.tools.irgen.ir;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Objects;
-import java.util.Set;
 
-import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeMirror;
 
 import com.mindlin.nautilus.tools.irgen.Utils;
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
 
 public class FieldSpec implements Writable {
-	public final Set<Modifier> modifiers;
+	public final int modifiers;
 	public final TypeMirror type;
 	public final String name;
 	public final String defaultValue;
 	
-	public FieldSpec(Set<Modifier> modifiers, TypeMirror type, String name) {
+	public FieldSpec(int modifiers, TypeMirror type, String name) {
 		this(modifiers, type, name, null);
 	}
 	
-	public FieldSpec(Set<Modifier> modifiers, TypeMirror type, String name, String defaultValue) {
-		this.modifiers = Objects.requireNonNull(modifiers);
+	public FieldSpec(int modifiers, TypeMirror type, String name, String defaultValue) {
+		this.modifiers = modifiers;
 		this.type = Objects.requireNonNull(type);
 		this.name = Objects.requireNonNull(name);
 		this.defaultValue = defaultValue;

@@ -6,11 +6,9 @@ import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.Set;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.Modifier;
 import javax.tools.JavaFileObject;
 
 import com.mindlin.nautilus.tools.irgen.IndentWriter;
@@ -34,7 +32,7 @@ public abstract class ClassSpec {
 		return String.format("%s.%s", this.getPackage(), this.getSimpleName());
 	}
 	
-	protected abstract Set<Modifier> getModifiers();
+	protected abstract int getModifiers();
 	
 	protected Optional<String> getSuper() {
 		return Optional.empty();
