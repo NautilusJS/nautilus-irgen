@@ -60,11 +60,22 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 	protected Map<String, Logger> getValues(Logger base, List<AnnotationMirror> mirrors) {
 		Map<String, Logger> result = new HashMap<>();
 		for (AnnotationMirror mirror : mirrors)
-			result.putAll(getValues(base, mirror));
+			result.putAll(this.getValues(base, mirror));
 		return result;
 	}
 	
-	public GetterSpec buildGetterSpec(ExecutableElement method, Logger logger) {
+	protected Collection<String> getParents(TypeElement target) {
+		Collection<String> parents = Utils.stream(target.getInterfaces())
+			.map(iface -> (iface instanceof DeclaredType ? (DeclaredType) iface : null))
+			.filter(Objects::nonNull)
+			.map(Utils::getName)
+			.collect(Collectors.toList());
+		// Remove Tree because it isn't real
+		parents.remove(IRTypes.TREE_CLASS);
+		return parents;
+	}
+	
+	public GetterSpec buildGetterSpec(ExecutableElement method) {
 		Elements elements = this.procEnv.getElementUtils();
 		GetterSpec result = new GetterSpec();
 		result.target = method;
@@ -110,8 +121,8 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 				case IRTypes.TREE_CHILDREN: {
 					if (result.invoker != null) {
 						String message = "Duplicate invocation";
-						getLogger().withTarget(method, result.invoker).error(message);
-						getLogger().withTarget(method, mirror).error(message);
+						logger.withSite(result.invoker).error(message);
+						logger.error(message);
 						return null;
 					}
 					result.invoker = mirror;
@@ -119,6 +130,14 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 						String fName = values.get("name").getValue().toString();
 						if (fName != null && !Objects.equals("__infer__", fName))
 							result.fName = fName;
+					}
+					if (values.containsKey("hash")) {
+						boolean hash = Boolean.valueOf(values.get("hash").getValue().toString());
+						result.hash = hash;
+					}
+					if (values.containsKey("compare")) {
+						boolean compare = Boolean.valueOf(values.get("compare").getValue().toString());
+						result.compare = compare;
 					}
 					
 					continue;
@@ -154,6 +173,23 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 		
 		return result;
 	}
+	
+	protected List<GetterSpec> buildGetters(TypeElement target) {
+		List<GetterSpec> getters = Utils.stream(ElementFilter.methodsIn(target.getEnclosedElements()))
+				.map(this::buildGetterSpec)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+		
+		// Toposort getters
+		try {
+			getters = Orderable.sorted(getters);
+		} catch (IllegalArgumentException e) {
+			// Toposort failed
+			getLogger().withTarget(target).error("Error sorting getters: " + e.getMessage());
+		}
+		
+		return getters;
+	}
 
 	public TreeSpec buildTreeSpec(TypeElement target) {
 		Logger logger = getLogger().withTarget(target);
@@ -165,44 +201,21 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 		
 		TreeSpec spec = new TreeSpec();
 		spec.source = target;
-		spec.kinds = getValues(logger, mirrors);
+		spec.kind = this.getKind();
+		spec.kinds = this.getValues(logger, mirrors);
 		
-		for (TypeMirror iface : target.getInterfaces()) {
-			DeclaredType parent;
-			try {
-				parent = (DeclaredType) iface;
-			} catch (ClassCastException e) {
-				continue;
-			}
-			spec.parents.add(Utils.getName(parent));
-		}
-		getLogger().note("Parent of %s: %s", target.getQualifiedName(), spec.parents);
+		spec.parents.addAll(this.getParents(target));
+		if (Utils.isVerbose())
+			getLogger().note("Parent of %s: %s", target.getQualifiedName(), spec.parents);
 		
-		for (ExecutableElement method : ElementFilter.methodsIn(target.getEnclosedElements())) {
-			GetterSpec getter = buildGetterSpec(method, logger);
-			if (getter != null) {
-				//logger.withTarget(method).warn(getter.toString());
-				spec.getters.add(getter);
-			}
+		spec.getters = this.buildGetters(target);
+		
+		if (Utils.isVerbose()) {
+			int i = 0;
+			for (GetterSpec getter : spec.getters)
+				getLogger().withTarget(getter.target).warn("Getter %d: %s", i++, getter);
 		}
 		
-		try {
-			spec.sortGetters();
-		} catch (IllegalArgumentException e) {
-			// Toposort failed
-			logger.error("Error sorting getters: " + e.getMessage());
-		}
-		
-		int i = 0;
-		for (GetterSpec getter : spec.getters)
-			getLogger().withTarget(getter.target).warn("Getter %d: %s", i++, getter);
-		
-		
-		// Query tree structure
-		
-		
-//		logger.warn("Implementinxg: %s -> %s/%s", target.getSimpleName(), implName, target.getInterfaces()
-//				.stream().map(Object::getClass).collect(Collectors.toList()));/**/
 		return spec;
 	}
 }
