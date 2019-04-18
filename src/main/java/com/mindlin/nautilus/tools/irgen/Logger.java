@@ -9,10 +9,10 @@ import javax.lang.model.element.Element;
 import javax.tools.Diagnostic.Kind;
 
 public class Logger {
-	Messager messager;
-	Element target;
-	AnnotationMirror site;
-	AnnotationValue value;
+	private final Messager messager;
+	private final Element target;
+	private final AnnotationMirror site;
+	private final AnnotationValue value;
 	
 	public Logger(Messager messager) {
 		this(messager, null, null, null);
