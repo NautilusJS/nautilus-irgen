@@ -23,10 +23,6 @@ import com.mindlin.nautilus.tools.irgen.Utils;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.OverrideMethod;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
 
-import javassist.CannotCompileException;
-import javassist.CtClass;
-import javassist.NotFoundException;
-
 public class TreeImplSpec extends ClassSpec {
 	/** Getter that returns a primitive */
 	public static final int MF_GPRIMITIVE = (1 << 0);
@@ -145,22 +141,6 @@ public class TreeImplSpec extends ClassSpec {
 //				result |= Modifier.FINAL;
 		
 		return result;
-	}
-	
-	@Override
-	protected void addCtBody(CtClass clz) throws NotFoundException, CannotCompileException, IOException {
-		super.addCtBody(clz);
-		
-		for (FieldSpec field : this.declaredFields) {
-			//TODO
-		}
-		
-		for (CtorSpec ctor : this.constructors) {
-			//TODO
-		}
-		
-		for (MethodSpec method : this.declaredMethods);
-			//clz.addMethod(method.toCt(clz));
 	}
 	
 	@Override
