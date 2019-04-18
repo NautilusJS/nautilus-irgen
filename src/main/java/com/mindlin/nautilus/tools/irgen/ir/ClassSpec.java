@@ -16,10 +16,6 @@ import com.mindlin.nautilus.tools.irgen.Utils;
 
 public abstract class ClassSpec {
 
-	public ClassSpec() {
-		// TODO Auto-generated constructor stub
-	}
-	
 	protected Element[] getSources() {
 		return new Element[0];
 	}

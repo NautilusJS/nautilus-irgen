@@ -27,11 +27,15 @@ public abstract class MethodSpec {
 	
 	public abstract String getReturnType();
 	
+	protected Collection<? extends String> getExceptions() {
+		return Collections.emptyList();
+	}
+	
 	public String getName() {
 		return this.name;
 	}
 	
-	protected abstract Iterable<ParameterSpec> getParameters();
+	protected abstract Collection<? extends ParameterSpec> getParameters();
 	
 	protected abstract void writeBody(IndentWriter out) throws IOException;
 	

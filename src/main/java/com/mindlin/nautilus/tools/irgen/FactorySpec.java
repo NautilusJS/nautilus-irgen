@@ -5,7 +5,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import com.mindlin.nautilus.tools.irgen.ir.ClassSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
