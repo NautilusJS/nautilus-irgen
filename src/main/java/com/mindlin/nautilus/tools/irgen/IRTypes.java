@@ -12,6 +12,7 @@ public class IRTypes {
 	public static final String ANNOTATION_PCKG = RAW_PACKAGE + ".annotations";
 	public static final String TREE_IMPL = TREE_CLASS + ".Impl";
 	public static final String TREE_NOIMPL = TREE_CLASS + ".NoImpl";
+	public static final String TREE_ADT = TREE_CLASS + ".ADT";
 	public static final String TREE_PROPERTY = TREE_CLASS + ".Property";
 	public static final String TREE_CHILD = TREE_CLASS + ".Child";
 	public static final String TREE_CHILDREN = TREE_CLASS + ".Children";

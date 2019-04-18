@@ -23,7 +23,7 @@ import com.mindlin.nautilus.tools.irgen.ImplProcessor.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.Orderable;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 
-@SupportedAnnotationTypes({IRTypes.TREE_IMPL, IRTypes.TREE_NOIMPL})
+@SupportedAnnotationTypes({IRTypes.TREE_NOIMPL, IRTypes.TREE_ADT, IRTypes.TREE_IMPL})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class IRGenerator extends AbstractProcessor {
 	
