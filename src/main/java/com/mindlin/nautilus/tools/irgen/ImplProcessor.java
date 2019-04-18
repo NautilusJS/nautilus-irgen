@@ -56,7 +56,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 	}
 	
 	protected FieldSpec getterToField(GetterSpec getter) {
-		return new FieldSpec(Utils.modifiers(Modifier.PROTECTED, Modifier.FINAL), getter.type, getter.fName);
+		return new FieldSpec(Modifier.PROTECTED | Modifier.FINAL, getter.type, getter.fName);
 	}
 	
 	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, TreeSpec spec) {
@@ -82,9 +82,6 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		if (parent == null)
 			return new ArrayList<>(getters);
 		
-		for (GetterSpec getter : getters) {
-			
-		}
 		return getters.stream()
 				.filter(getter -> {
 					GetterSpec parentGetter = parent.getters.get(getter.name);
