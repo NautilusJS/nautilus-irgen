@@ -60,28 +60,39 @@ public class IRGenerator extends AbstractProcessor {
 		return specMap;
 	}
 	
-	protected Map<String, TreeSpec> processImplTrees(TypeElement annotation, RoundEnvironment roundEnv) {
-		DeclaredType annotationType = (DeclaredType) annotation.asType();
+	protected Set<String> getUnprocessed(Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs) {
+		Stack<String> queue = new Stack<>();
+		Set<String> enqueued = new HashSet<>();
+		Set<String> missing = new HashSet<>();
 		
-		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType, roundEnv);
+		Map<String, TreeSpec> specs = new HashMap<>(niSpecs);
+		specs.putAll(iSpecs);
 		
-		Set<? extends Element> targets = roundEnv.getElementsAnnotatedWith(annotation);
-		if (targets.isEmpty())
-			return Collections.emptyMap();
+		queue.addAll(iSpecs.keySet());
+		enqueued.addAll(iSpecs.keySet());
 		
-		Map<String, TreeSpec> specMap = new HashMap<>();
-		for (Element target : targets) {
-			Logger logger = getLogger().withTarget(target);
-			
-			if (target.getKind() != ElementKind.INTERFACE) {
-				logger.error("Illegal @Tree.Impl on kind: %s", target.getKind());
+		while (!queue.isEmpty()) {
+			String path = queue.pop();
+			TreeSpec spec = specs.get(path);
+			if (spec == null) {
+				getLogger().note("Missing spec for %s", path);
+				missing.add(path);
 				continue;
 			}
-			
-			TreeSpec spec = processor.buildTreeSpec((TypeElement) target);
-			specMap.put(Utils.getName(target), spec);
+			for (String parent : spec.parents) {
+				if (!specs.containsKey(parent))
+					missing.add(parent);
+				if (enqueued.add(parent))
+					queue.add(parent);
+			}
 		}
-		return specMap;
+		
+		Set<String> extra = new HashSet<>(specs.keySet());
+		extra.removeAll(enqueued);
+		if (Utils.isVerbose())
+			getLogger().note("Extra specs: %s", extra);
+		
+		return missing;
 	}
 	
 	protected void processImplOutputs(TypeElement annotation, RoundEnvironment roundEnv, Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs) {
