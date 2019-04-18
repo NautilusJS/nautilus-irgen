@@ -1,38 +1,28 @@
 package com.mindlin.nautilus.tools.irgen;
 
-import static com.mindlin.nautilus.tools.irgen.Utils.invoke;
-
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
-import com.mindlin.nautilus.tools.irgen.ir.ClassSpec;
-import com.mindlin.nautilus.tools.irgen.ir.CtorSpec;
 import com.mindlin.nautilus.tools.irgen.ir.FieldSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.CollectionGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.NarrowGetterSpec;
-import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.OverrideMethod;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.SimpleGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.ParameterSpec;
+import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
 
@@ -189,7 +179,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		List<GetterSpec> resolvedGetters = new LinkedList<>();// LinkedList because we might be removing values from the middle
 		this.resolveGetters(resolvedGetters, gettersMap, spec);
 		
-		getLogger().warn("Getters for %s: %s", spec.getName(), resolvedGetters);
+		if (Utils.isVerbose())
+			getLogger().warn("Getters for %s: %s", spec.getName(), resolvedGetters);
 		
 		// Determine which fields we have to declare
 		// We only declare a field if it doesn't exist in our parent
@@ -209,8 +200,9 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		impl.declaredFields.addAll(localFields.values());
 		
 		// Generate getter methods
-		for (GetterSpec getter : resolvedGetters) { 
-			getLogger().warn("Add getter %s to %s", getter.name, spec.getName());
+		for (GetterSpec getter : resolvedGetters) {
+			if (Utils.isVerbose())
+				getLogger().warn("Add getter %s to %s", getter.name, spec.getName());
 			MethodSpec method = this.makeGetter(impl, getter, parentSpec);
 			if (method == null)
 				continue;
