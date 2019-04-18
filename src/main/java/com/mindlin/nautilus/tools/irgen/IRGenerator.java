@@ -1,12 +1,16 @@
 package com.mindlin.nautilus.tools.irgen;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -105,13 +109,15 @@ public class IRGenerator extends AbstractProcessor {
 		
 		// Order impl gen
 		List<TreeSpec> implOrder = Orderable.sorted(new ArrayList<>(iSpecs.values()));
-		getLogger().note("Impl order: %s", implOrder.stream().map(TreeSpec::getName).collect(Collectors.toList()));
+		if (Utils.isVerbose())
+			getLogger().note("Impl order: %s", implOrder.stream().map(TreeSpec::getName).collect(Collectors.toList()));
 		
 		for (TreeSpec spec : implOrder) {
 			Logger logger = getLogger().withTarget(spec.source);
 			TreeImplSpec specImpl = processor.buildTreeImpl(spec.source, spec);
 			impls.put(spec.getName(), specImpl);
-			logger.warn("SpecImpl: %s", specImpl);
+			if (Utils.isVerbose())
+				logger.warn("SpecImpl: %s", specImpl);
 			
 			try {
 				specImpl.write(this.processingEnv.getFiler());
