@@ -19,7 +19,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
-import com.mindlin.nautilus.tools.irgen.ImplProcessor.TreeImplSpec;
+import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.Orderable;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 
@@ -31,7 +31,7 @@ public class IRGenerator extends AbstractProcessor {
 		return new Logger(this.processingEnv.getMessager());
 	}
 	
-	protected Map<String, TreeSpec> processNoImplTrees(TypeElement annotation, RoundEnvironment roundEnv) {
+	protected Map<String, TreeSpec> processTrees(TypeElement annotation, RoundEnvironment roundEnv) {
 		DeclaredType annotationType = (DeclaredType) annotation.asType();
 		
 		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType, roundEnv);
@@ -45,7 +45,7 @@ public class IRGenerator extends AbstractProcessor {
 			Logger logger = getLogger().withTarget(target);
 			
 			if (target.getKind() != ElementKind.INTERFACE) {
-				logger.error("Illegal @Tree.NoImpl on kind: %s", target.getKind());
+				logger.error("Illegal @Tree.%s on kind: %s", annotation.getSimpleName(), target.getKind());
 				continue;
 			}
 			
@@ -114,26 +114,38 @@ public class IRGenerator extends AbstractProcessor {
 
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-		getLogger().note("Hello, world! %s", annotations);
-		TypeElement noImpl = annotations.stream()
-				.filter(annotation -> annotation.getQualifiedName().contentEquals(IRTypes.TREE_NOIMPL))
-				.findAny()
-				.orElseGet(() -> null);
+		Instant start = Instant.now();
 		
-		TypeElement impl = annotations.stream()
-				.filter(annotation -> annotation.getQualifiedName().contentEquals(IRTypes.TREE_IMPL))
-				.findAny()
-				.orElseGet(() -> null);
+		if (Utils.isVerbose())
+			getLogger().note("Hello, world! %s", annotations);
+		
+		Map<String, TypeElement> annotationLUT = annotations.stream()
+				.collect(Collectors.toMap(annotation -> annotation.getQualifiedName().toString(), x -> x));
+		
 		Map<String, TreeSpec> niSpecs = Collections.emptyMap(), iSpecs = Collections.emptyMap();
-		if (noImpl != null)
-			niSpecs = this.processNoImplTrees(noImpl, roundEnv);
-		if (impl != null)
-			iSpecs = this.processImplTrees(impl, roundEnv);
-		getLogger().note("niSpecs=%s", niSpecs);
-		getLogger().note("iSpecs=%s", iSpecs);
 		
+		TypeElement noImpl = annotationLUT.get(IRTypes.TREE_NOIMPL);
+		if (noImpl != null)
+			niSpecs = this.processTrees(noImpl, roundEnv);
+		TypeElement adt = annotationLUT.get(IRTypes.TREE_ADT);
+		if (adt != null)
+			;
+		TypeElement impl = annotationLUT.get(IRTypes.TREE_IMPL);
 		if (impl != null)
-			this.processImplOutputs(impl, roundEnv, niSpecs, iSpecs);
+			iSpecs = this.processTrees(impl, roundEnv);
+		
+		if (!iSpecs.isEmpty()) {
+//			if (Utils.isVerbose())
+//				getLogger().note("niSpecs=%s / iSpecs=%s", niSpecs, iSpecs);
+			
+			getLogger().note("Missing specs=%s", getUnprocessed(niSpecs, iSpecs));
+			
+			if (impl != null)
+				this.processImplOutputs(impl, roundEnv, niSpecs, iSpecs);
+		}
+		
+		Duration elapsed = Duration.between(start, Instant.now());
+		getLogger().note("Ran in %d.%09d", elapsed.getSeconds(), elapsed.getNano());
 		
 		return true;
 	}
