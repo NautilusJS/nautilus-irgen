@@ -18,10 +18,11 @@ import com.mindlin.nautilus.tools.irgen.Utils;
 
 public class TreeSpec implements Orderable {
 	public TypeElement source;
+	public Kind kind;
 	public Logger logger;
 	public List<String> parents = new ArrayList<>();
 	public Map<String, Logger> kinds;
-	public List<GetterSpec> getters = new ArrayList<>();
+	public List<GetterSpec> getters;
 	
 	public TreeSpec() {
 	}
@@ -30,10 +31,6 @@ public class TreeSpec implements Orderable {
 		return this.source.getQualifiedName().toString();
 	}
 	
-	public void sortGetters() {
-		this.getters = Orderable.sorted(this.getters);
-	}
-
 	@Override
 	public boolean isFirst() {
 		return false;
@@ -136,5 +133,11 @@ public class TreeSpec implements Orderable {
 		public String getOrderName() {
 			return this.fName;
 		}
+	}
+	
+	public static enum Kind {
+		NO_IMPL,
+		ADT,
+		IMPL,
 	}
 }
