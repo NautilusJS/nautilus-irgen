@@ -172,6 +172,21 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		TreeImplSpec parentSpec = this.impls.get(impl.parent);
 		impl.parentIfaces.add(spec.getName());
 		
+		// Add sources for Filer dependency stuff
+		impl.sources.addAll(spec.parents.stream()
+				.map(this.impls::get)
+				.filter(Objects::nonNull)
+				.map(parent -> parent.source)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList()));
+		
+		impl.sources.addAll(spec.parents.stream()
+				.map(this.niSpecs::get)
+				.filter(Objects::nonNull)
+				.map(parent -> parent.source)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList()));
+		
 		// Resolve getters
 		Map<String, GetterSpec> gettersMap = new HashMap<>();
 		List<GetterSpec> resolvedGetters = new LinkedList<>();// LinkedList because we might be removing values from the middle
