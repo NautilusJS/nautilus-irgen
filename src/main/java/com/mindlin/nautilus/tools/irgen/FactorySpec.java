@@ -1,12 +1,11 @@
 package com.mindlin.nautilus.tools.irgen;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import javax.lang.model.element.Modifier;
 
 import com.mindlin.nautilus.tools.irgen.ir.ClassSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
@@ -29,8 +28,8 @@ public class FactorySpec extends ClassSpec {
 	}
 
 	@Override
-	protected Set<Modifier> getModifiers() {
-		return Utils.modifiers(Modifier.FINAL, Modifier.PUBLIC);
+	protected int getModifiers() {
+		return Modifier.PUBLIC | Modifier.FINAL;
 	}
 
 	@Override
@@ -48,8 +47,8 @@ public class FactorySpec extends ClassSpec {
 		}
 		
 		@Override
-		protected Set<Modifier> getModifiers() {
-			return Utils.modifiers(Modifier.PUBLIC, Modifier.FINAL, Modifier.STATIC);
+		protected int getModifiers() {
+			return Modifier.PUBLIC | Modifier.FINAL | Modifier.STATIC;
 		}
 
 		@Override
@@ -58,7 +57,7 @@ public class FactorySpec extends ClassSpec {
 		}
 
 		@Override
-		protected Iterable<ParameterSpec> getParameters() {
+		protected Collection<ParameterSpec> getParameters() {
 			// TODO Auto-generated method stub
 			return null;
 		}

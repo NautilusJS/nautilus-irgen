@@ -5,7 +5,6 @@ import java.io.Writer;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 
 import javax.lang.model.type.TypeMirror;
@@ -22,8 +21,8 @@ public abstract class MethodSpec {
 		this.name = Objects.requireNonNull(name);
 	}
 	
-	protected Set<Modifier> getModifiers() {
-		return new HashSet<>();
+	protected int getModifiers() {
+		return 0;
 	}
 	
 	public abstract String getReturnType();

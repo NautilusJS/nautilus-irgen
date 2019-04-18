@@ -323,12 +323,10 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		}
 
 		@Override
-		protected Set<Modifier> getModifiers() {
-			Set<Modifier> result = new HashSet<>();
-			result.add(Modifier.PUBLIC);
-			
-			if (!this.extensible)
-				result.add(Modifier.FINAL);
+		protected int getModifiers() {
+			int result = Modifier.PUBLIC;
+//			if (!this.extensible)
+//				result |= Modifier.FINAL;
 			
 			return result;
 		}
@@ -378,10 +376,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			}
 			
 			@Override
-			protected Set<Modifier> getModifiers() {
-				Set<Modifier> result = new HashSet<>();
-				result.add(Modifier.PUBLIC);
-				return result;
+			protected int getModifiers() {
+				return Modifier.PUBLIC;
 			}
 
 			@Override
