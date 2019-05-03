@@ -51,8 +51,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 	
 	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, TreeSpec spec) {
 		//TODO: fix parent traversal order
-		for (String parent : spec.parents) {
-			TreeSpec parentSpec = this.niSpecs.get(parent);
+		for (TypeName parent : spec.parents) {
+			TreeSpec parentSpec = this.niSpecs.get(parent.toString());
 			if (parentSpec == null)
 				continue;
 			this.resolveGetters(getters, gettersMap, parentSpec);
@@ -86,8 +86,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 	
 	protected void buildFields(Map<String, FieldSpec> fields, TreeSpec spec) {
 		// Recurse through parents first, so they get overridden.
-		for (String parent : spec.parents) {
-			TreeSpec parentSpec = this.niSpecs.get(parent);
+		for (TypeName parent : spec.parents) {
+			TreeSpec parentSpec = this.niSpecs.get(parent.toString());//TODO: fix?
 			if (parentSpec == null) {
 				continue;
 			}
@@ -156,11 +156,12 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		// Resolve heritage
 		impl.baseType = spec.getName();
 		impl.parent = this.getResolvedSuperclass(spec.parents);
-		TreeImplSpec parentSpec = this.impls.get(impl.parent);
+		TreeImplSpec parentSpec = this.impls.get(impl.parent.toString());//TODO fix?
 		impl.parentIfaces.add(spec.getName());
 		
 		// Add sources for Filer dependency stuff
 		impl.sources.addAll(spec.parents.stream()
+				.map(Objects::toString)//TODO: fix?
 				.map(this.impls::get)
 				.filter(Objects::nonNull)
 				.map(parent -> parent.source)
@@ -168,6 +169,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 				.collect(Collectors.toList()));
 		
 		impl.sources.addAll(spec.parents.stream()
+				.map(Objects::toString)//TODO: fix?
 				.map(this.niSpecs::get)
 				.filter(Objects::nonNull)
 				.map(parent -> parent.source)
@@ -213,7 +215,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		impl.buildMethods();
 		
 		// Generate constructors
-		List<ParameterSpec> superParams = parentSpec == null ? Collections.emptyList() : parentSpec.params;
+		List<ParameterSpec> superParams = parentSpec == null ? Collections.emptyList() : parentSpec.getFieldParams();
 		impl.constructors.add(impl.new ForwardingCtorSpec(superParams));
 //		impl.constructors.add(new TreeImplSpec.RangeMergeCtorSpec(Utils.map(superArgs, arg -> new ParameterSpec()));
 		
