@@ -95,7 +95,7 @@ public class TreeImplSpec extends ClassSpec {
 	
 	@Override
 	protected Collection<TypeName> getImplementing() {
-		return Arrays.asList(TypeName.wrap(this.source));
+		return Arrays.asList(ClassName.get(this.source));
 	}
 	
 	@Override
@@ -170,15 +170,20 @@ public class TreeImplSpec extends ClassSpec {
 			writer.setEOL();
 		}
 		
-		writer.println();
+		if (!this.declaredFields.isEmpty())
+			writer.println();
 		
 		for (CtorSpec ctor : this.constructors) {
 			ctor.write(writer);
-			writer.setEOL();
+			writer.println();
 		}
+		
+		if (!this.constructors.isEmpty())
+			writer.println();
 		
 		for (MethodSpec method : this.declaredMethods) {
 			method.write(writer);
+			writer.println();
 			writer.setEOL();
 		}
 	}
@@ -277,17 +282,16 @@ public class TreeImplSpec extends ClassSpec {
 				}
 				
 				boolean nnCheck = Utils.isNonNull(localField.type, true);
-				if (nnCheck) {
-					out.emit("$T.requireNonNull($N);", Objects.class, param);
-					out.println();
-				}
-				
 				boolean isCollection = IRTypes.isCollection(localField.type);
-				if (isCollection) {
+				if (nnCheck) {
+					out.emit("this.$N = $T.requireNonNull($N);", localField, Objects.class, param);
+				} else if (isCollection) {
 					//TODO: check element nonnull
+					out.emit("this.$N = $N;", localField, param);
+				} else {
+					out.emit("this.$N = $N;", localField, param);
 				}
 				
-				out.emit("this.$N = $N;", localField, param);
 				out.setEOL();
 			}
 		}
@@ -319,7 +323,10 @@ public class TreeImplSpec extends ClassSpec {
 		@Override
 		protected void writeBody(CodeWriter out) {
 			List<String> params = Utils.map(getMethods(MF_HASH), spec -> Utils.invoke("this", spec.getName()));
-			out.emit("return $T.hash($,N);", Objects.class, params);
+			if (params.isEmpty())
+				out.print("return super.hash();");
+			else
+				out.emit("return $T.hash(super.hash(), $,N);", Objects.class, params);
 			out.setEOL();
 		}
 	}
@@ -341,7 +348,8 @@ public class TreeImplSpec extends ClassSpec {
 
 		@Override
 		protected void writeBody(CodeWriter out) {
-			out.emit("return (other instanceof $T) && this.equivalentTo(($T) other);", TreeImplSpec.this.getBaseTreeType(), TreeImplSpec.this.getBaseTreeType());
+			TypeName type = TreeImplSpec.this.getBaseTreeType();
+			out.emit("return (other instanceof $T) && this.equivalentTo(($T) other);", type, type);
 			out.setEOL();
 		}
 	}
@@ -350,6 +358,11 @@ public class TreeImplSpec extends ClassSpec {
 
 		public EquivalentToSelfMethodSpec() {
 			super("equivalentTo");
+		}
+		
+		@Override
+		protected int getModifiers() {
+			return super.getModifiers() | Modifier.PROTECTED;
 		}
 
 		@Override
@@ -367,10 +380,7 @@ public class TreeImplSpec extends ClassSpec {
 			out.println("if (this == other)");
 			out.indentln("return true;");
 			
-			out.println("if (other == null || this.getKind() != other.getKind() || this.hashCode() != other.hashCode())");
-			out.indentln("return false;");
-			
-			out.print("return true");// Make '&&' chaining easier
+			out.print("return super.equivalentTo(other)");// Make '&&' chaining easier
 			out.pushIndent(2);
 			
 			// Primitive props: (a == b)
