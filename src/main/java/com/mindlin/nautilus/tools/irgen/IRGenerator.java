@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
@@ -22,10 +23,12 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 
-import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.Orderable;
+import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 @SupportedAnnotationTypes({IRTypes.TREE_NOIMPL, IRTypes.TREE_ADT, IRTypes.TREE_IMPL})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -64,11 +67,39 @@ public class IRGenerator extends AbstractProcessor {
 		return specMap;
 	}
 	
-	protected Set<String> getUnprocessed(Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs) {
+	protected Map<String, TreeSpec> processTreesMP(TypeElement annotation, RoundEnvironment roundEnv) {
+		DeclaredType annotationType = (DeclaredType) annotation.asType();
+		
+		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType, roundEnv);
+		
+		Set<? extends Element> targets = roundEnv.getElementsAnnotatedWith(annotation);
+		if (targets.isEmpty())
+			return Collections.emptyMap();
+		
+		return targets.parallelStream()
+			.filter(target -> {
+				if (target.getKind() != ElementKind.INTERFACE) {
+					getLogger().withTarget(target).error("Illegal @Tree.%s on kind: %s", annotation.getSimpleName(), target.getKind());
+					return false;
+				}
+				return true;
+			})
+			.collect(Collectors.toMap(Utils::getName, target -> {
+				try {
+					return processor.buildTreeSpec((TypeElement) target);
+				} catch (Exception e) {
+					getLogger().withTarget(target).error("Error reading @Tree.%s: %s", annotation.getSimpleName(), e.getLocalizedMessage());
+					throw e;
+				}
+			}));
+	}
+	
+	protected Set<String> getUnprocessed(TypeElement adt, RoundEnvironment roundEnv, Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs) {
 		Stack<String> queue = new Stack<>();
 		Set<String> enqueued = new HashSet<>();
 		Set<String> missing = new HashSet<>();
 		
+		Map<String, String> sources = new HashMap<>();
 		Map<String, TreeSpec> specs = new HashMap<>(niSpecs);
 		specs.putAll(iSpecs);
 		
@@ -83,7 +114,10 @@ public class IRGenerator extends AbstractProcessor {
 				missing.add(path);
 				continue;
 			}
-			for (String parent : spec.parents) {
+			for (TypeName _parent : spec.parents) {
+				//TODO: fix
+				String parent = _parent.toString();
+				sources.putIfAbsent(parent, path);
 				if (!specs.containsKey(parent))
 					missing.add(parent);
 				if (enqueued.add(parent))
@@ -95,6 +129,20 @@ public class IRGenerator extends AbstractProcessor {
 		extra.removeAll(enqueued);
 		if (Utils.isVerbose())
 			getLogger().note("Extra specs: %s", extra);
+		
+		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, (DeclaredType) adt.asType(), roundEnv);
+		if (!missing.isEmpty()) {
+			String mp = missing.iterator().next();
+			String mps = sources.get(mp);
+			getLogger().note("%s is missing %s", mps, mp);
+			TreeSpec mpsSpec = specs.get(mps);
+			for (TypeMirror candidate : this.processingEnv.getTypeUtils().directSupertypes(mpsSpec.source.asType())) {
+				String name = Utils.getName((DeclaredType) candidate);
+				if (!Objects.equals(name, mp))
+					continue;
+				getLogger().note("Found type %s (%s)", name, processor.buildTreeSpec((TypeElement) ((DeclaredType) candidate).asElement()));
+			}
+		}
 		
 		return missing;
 	}
@@ -115,22 +163,27 @@ public class IRGenerator extends AbstractProcessor {
 		for (TreeSpec spec : implOrder) {
 			Logger logger = getLogger().withTarget(spec.source);
 			TreeImplSpec specImpl = processor.buildTreeImpl(spec.source, spec);
-			impls.put(spec.getName(), specImpl);
+			impls.put(spec.getName().toString(), specImpl);
 			if (Utils.isVerbose())
 				logger.warn("SpecImpl: %s", specImpl);
 			
 			try {
 				specImpl.write(this.processingEnv.getFiler());
 			} catch (IOException e) {
-				getLogger().error("Error writing impl %s: %s", specImpl.getQualifiedName(), e.getMessage());
+				getLogger().error("Error writing impl %s: %s", specImpl.getClassName(), e.getMessage());
 				e.printStackTrace();
 				continue;
 			}
 		}
 	}
+	
+	public static void main(String...args) {
+		
+	}
 
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+		IRGenerator.main();
 		Instant start = Instant.now();
 		
 		if (Utils.isVerbose())
@@ -155,7 +208,7 @@ public class IRGenerator extends AbstractProcessor {
 //			if (Utils.isVerbose())
 //				getLogger().note("niSpecs=%s / iSpecs=%s", niSpecs, iSpecs);
 			
-			getLogger().note("Missing specs=%s", getUnprocessed(niSpecs, iSpecs));
+			getLogger().note("Missing specs=%s", getUnprocessed(adt, roundEnv, niSpecs, iSpecs));
 			
 			if (impl != null)
 				this.processImplOutputs(impl, roundEnv, niSpecs, iSpecs);
