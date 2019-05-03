@@ -1,7 +1,6 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,11 +8,10 @@ import java.util.Objects;
 
 import javax.lang.model.type.TypeMirror;
 
-import com.mindlin.nautilus.tools.irgen.IRTypes;
-import com.mindlin.nautilus.tools.irgen.IndentWriter;
 import com.mindlin.nautilus.tools.irgen.Utils;
+import com.mindlin.nautilus.tools.irgen.Utils.Writable;
 
-public abstract class MethodSpec {
+public abstract class MethodSpec implements Writable, Named {
 	public int flags;
 	protected final String name;
 	
@@ -25,42 +23,27 @@ public abstract class MethodSpec {
 		return 0;
 	}
 	
-	public abstract String getReturnType();
+	public abstract TypeName getReturnType();
 	
-	protected Collection<? extends String> getExceptions() {
-		return Collections.emptyList();
-	}
-	
+	@Override
 	public String getName() {
 		return this.name;
 	}
 	
+	protected void writeBefore(@SuppressWarnings("unused") CodeWriter out) throws IOException {
+		
+	}
+	
 	protected abstract Collection<? extends ParameterSpec> getParameters();
 	
-	protected abstract void writeBody(IndentWriter out) throws IOException;
+	protected abstract void writeBody(CodeWriter out) throws IOException;
 	
-	protected void writeBefore(IndentWriter out) throws IOException {
-	}
-	
-	public void write(Writer out) throws IOException {
-		if (out instanceof IndentWriter)
-			write((IndentWriter) out);
-		else
-			write(new IndentWriter(out));
-	}
-	
-	public void write(IndentWriter out) throws IOException {
+	@Override
+	public void write(CodeWriter out) throws IOException {
 		this.writeBefore(out);
 		
-		Utils.writeModifiers(out, this.getModifiers());
-		
-		out.print(this.getReturnType());
-		out.space();
-		out.print(this.getName());
-		
-		out.print('(');
-		Utils.writeAll(out, this.getParameters(), ", ");
-		out.println(") {");
+		out.emit("$M $T $N($,n) {", this.getModifiers(), this.getReturnType(), this.getName(), this.getParameters());
+		out.println();
 		
 		out.pushIndent();
 		this.writeBody(out);
@@ -68,6 +51,7 @@ public abstract class MethodSpec {
 		
 		out.setEOL();
 		out.print('}');
+		out.setEOL();
 	}
 	
 	public static abstract class OverrideMethod extends MethodSpec {
@@ -76,7 +60,7 @@ public abstract class MethodSpec {
 		}
 
 		@Override
-		protected void writeBefore(IndentWriter out) throws IOException {
+		protected void writeBefore(CodeWriter out) throws IOException {
 			out.println("@Override");
 			super.writeBefore(out);
 		}
@@ -106,13 +90,13 @@ public abstract class MethodSpec {
 		}
 
 		@Override
-		public String getReturnType() {
-			return this.field.type.toString();
+		public TypeName getReturnType() {
+			return TypeName.wrap(this.field.type);
 		}
 		
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
-			out.format("return (this.%s);", this.field.name);
+		protected void writeBody(CodeWriter out) throws IOException {
+			out.emit("return this.$N;", this.field);
 			out.println();
 		}
 	}
@@ -128,18 +112,20 @@ public abstract class MethodSpec {
 		}
 		
 		@Override
-		public String getReturnType() {
-			return this.field.type.toString();
+		public TypeName getReturnType() {
+			return TypeName.wrap(this.field.type);
 		}
 		
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
-			String fName = this.field.name;
-			String type = this.getReturnType();
-			out.format("%s result = %s;\n", type, Utils.getField("this", fName));
+		protected void writeBody(CodeWriter out) throws IOException {
+			TypeName type = this.getReturnType();
+			out.emit("$T result = this.$N;", type, this.field);
+			out.println();
 			
-			if (this.immutable)
-				out.format("result = %s;\n", Utils.unmodifiable(type, "result"));
+			if (this.immutable) {
+				out.emit("result = $T.$N($N);", Collections.class, Utils.immutableMethod(type), "result");
+				out.println();
+			}
 			
 			out.println("return result;");
 		}
@@ -155,8 +141,8 @@ public abstract class MethodSpec {
 		}
 
 		@Override
-		public String getReturnType() {
-			return this.type.toString();
+		public TypeName getReturnType() {
+			return TypeName.wrap(this.type);
 		}
 		
 		protected boolean shouldCheckForNull() {
@@ -164,11 +150,14 @@ public abstract class MethodSpec {
 		}
 
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
-			out.format("%s result = %s;\n", this.type, Utils.invoke("super", this.name));
+		protected void writeBody(CodeWriter out) throws IOException {
+			out.emit("$T result = super.$N();", this.type, this.name);
+			out.println();
 			
-			if (this.shouldCheckForNull())
-				out.format("%s.requireNonNull(result);\n", IRTypes.OBJECTS);
+			if (this.shouldCheckForNull()) {
+				out.emit("$T.requireNonNull(result);", Objects.class);
+				out.println();
+			}
 			
 			out.println("return result;");
 		}

@@ -1,18 +1,15 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
 import javax.tools.JavaFileObject;
-
-import com.mindlin.nautilus.tools.irgen.IndentWriter;
-import com.mindlin.nautilus.tools.irgen.Utils;
 
 public abstract class ClassSpec {
 
@@ -24,17 +21,21 @@ public abstract class ClassSpec {
 	
 	protected abstract String getSimpleName();
 	
-	public String getQualifiedName() {
-		return String.format("%s.%s", this.getPackage(), this.getSimpleName());
+	protected Set<ClassName> getImports() {
+		return Collections.emptySet();
+	}
+	
+	public ClassName getClassName() {
+		return new ClassName(this.getPackage(), this.getSimpleName());
 	}
 	
 	protected abstract int getModifiers();
 	
-	protected Optional<String> getSuper() {
+	protected Optional<TypeName> getSuper() {
 		return Optional.empty();
 	}
 	
-	protected Collection<String> getImplementing() {
+	protected Collection<TypeName> getImplementing() {
 		return Collections.emptyList();
 	}
 	
@@ -51,45 +52,45 @@ public abstract class ClassSpec {
 	}
 	
 	public void write(Filer filer) throws IOException {
-		JavaFileObject file = filer.createSourceFile(getQualifiedName(), this.getSources());
+		JavaFileObject file = filer.createSourceFile(getClassName().toString(), this.getSources());
 		try (Writer writer = file.openWriter()) {
 			this.write(writer);
 		}
 	}
 	
-	protected void writeHeritage(PrintWriter writer) throws IOException {
-		Optional<String> parent = this.getSuper();
-		if (parent.isPresent()) {
-			writer.print("extends ");
-			writer.print(parent.get());
-			writer.print(" ");
-		}
+	protected void writeHeritage(CodeWriter writer) throws IOException {
+		Optional<TypeName> parent = this.getSuper();
+		if (parent.isPresent())
+			writer.emit("extends $T ", parent.get());
 		
-		Collection<String> implementing = this.getImplementing();
+		Collection<TypeName> implementing = this.getImplementing();
 		if (!implementing.isEmpty()) {
-			writer.print("implements ");
-			Utils.writeList(writer, implementing, ", ");
+			writer.emit("implements $,T ", implementing);
 			writer.print(" ");
 		}
 	}
 	
-	protected void writeBody(IndentWriter writer) throws IOException {
+	protected void writeBody(@SuppressWarnings("unused") CodeWriter writer) throws IOException {
 		
 	}
 	
 	public void write(Writer _writer) throws IOException {
-		final IndentWriter writer = new IndentWriter(_writer, "\t");
+		final CodeWriter writer = new CodeWriter(_writer, "\t");
 		// Write package declaration
 		if (!this.getPackage().isEmpty()) {
-			writer.format("package %s;", this.getPackage());
-			writer.println();
-			writer.println();
+			writer.emitPackageDeclaration(this.getPackage());
+			writer.setPackage(this.getPackage());
 		}
+		
+		Set<ClassName> imports = this.getImports();
+		for (ClassName ipclz : imports) {
+			writer.emitImport(ipclz);
+			writer.addImport(ipclz);
+		}
+		if (!imports.isEmpty())
+			writer.println();
 
-		Utils.writeModifiers(writer, getModifiers());
-		writer.print("class ");
-		writer.print(getSimpleName());
-		writer.print(" ");
+		writer.emit("$M class $N ", this.getModifiers(), this.getSimpleName());
 		
 		this.writeHeritage(writer);
 		

@@ -16,19 +16,19 @@ import javax.lang.model.type.TypeMirror;
 import com.mindlin.nautilus.tools.irgen.Logger;
 import com.mindlin.nautilus.tools.irgen.Utils;
 
-public class TreeSpec implements Orderable {
+public class TreeSpec implements Orderable<TypeName> {
 	public TypeElement source;
 	public Kind kind;
 	public Logger logger;
-	public List<String> parents = new ArrayList<>();
+	public List<TypeName> parents = new ArrayList<>();
 	public Map<String, Logger> kinds;
 	public List<GetterSpec> getters;
 	
 	public TreeSpec() {
 	}
 	
-	public String getName() {
-		return this.source.getQualifiedName().toString();
+	public TypeName getName() {
+		return TypeName.wrap(this.source);
 	}
 	
 	@Override
@@ -42,21 +42,21 @@ public class TreeSpec implements Orderable {
 	}
 
 	@Override
-	public Set<String> getBefore() {
+	public Set<TypeName> getBefore() {
 		return new HashSet<>(this.parents);
 	}
 
 	@Override
-	public Set<String> getAfter() {
+	public Set<TypeName> getAfter() {
 		return Collections.emptySet();
 	}
 
 	@Override
-	public String getOrderName() {
+	public TypeName getOrderName() {
 		return this.getName();
 	}
 
-	public static class GetterSpec implements Orderable {
+	public static class GetterSpec implements Orderable<String> {
 		public ExecutableElement target;
 		public AnnotationMirror invoker;
 		public TypeMirror type;
@@ -64,6 +64,7 @@ public class TreeSpec implements Orderable {
 		public String name;
 		public boolean override;
 		public int overrideTarget = -1;
+		public String boundValue = null;
 		
 		// Usage
 		public boolean hash = true;
