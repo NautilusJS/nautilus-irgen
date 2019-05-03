@@ -16,15 +16,18 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
+import com.mindlin.nautilus.tools.irgen.ir.ClassName;
 import com.mindlin.nautilus.tools.irgen.ir.FieldSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.CollectionGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.NarrowGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.SimpleGetterSpec;
+import com.mindlin.nautilus.tools.irgen.ir.Named;
 import com.mindlin.nautilus.tools.irgen.ir.ParameterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class ImplProcessor extends AnnotationProcessorBase {
 	final Map<String, TreeSpec> niSpecs;
@@ -38,11 +41,14 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		this.impls = impls;
 	}
 	
-	public String getResolvedSuperclass(Collection<String> parents) {
-		for (String parent : parents)
-			if (this.impls.containsKey(parent))
-				return this.impls.get(parent).getQualifiedName();
-		return IRTypes.ABSTRACT_BASE;
+	public ClassName getResolvedSuperclass(Collection<TypeName> parents) {
+		return parents.stream()
+				.map(Object::toString)//TODO: fix?
+				.map(this.impls::get)
+				.filter(Objects::nonNull)
+				.map(TreeImplSpec::getClassName)
+				.findFirst()
+				.orElse(IRTypes.ABSTRACT_BASE);
 	}
 	
 	protected FieldSpec getterToField(GetterSpec getter) {
