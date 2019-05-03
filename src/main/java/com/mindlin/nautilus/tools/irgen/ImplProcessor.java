@@ -103,8 +103,10 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		
 		for (GetterSpec getter : spec.getters) {
 			FieldSpec field = this.getterToField(getter);
-			if (fields.put(field.name, field) != null)
-				getLogger().warn("Duplicate field '%s' on %s", field.name, spec.getName());
+			if (getter.override)
+				fields.put(field.name, field);
+			else if (fields.put(field.name, field) != null)
+				getLogger().warn("Duplicate field '%s' on %s (no override)", field.name, spec.getName());
 		}
 	}
 	
