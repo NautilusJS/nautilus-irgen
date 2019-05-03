@@ -64,10 +64,8 @@ public abstract class ClassSpec {
 			writer.emit("extends $T ", parent.get());
 		
 		Collection<TypeName> implementing = this.getImplementing();
-		if (!implementing.isEmpty()) {
+		if (!implementing.isEmpty())
 			writer.emit("implements $,T ", implementing);
-			writer.print(" ");
-		}
 	}
 	
 	protected void writeBody(@SuppressWarnings("unused") CodeWriter writer) throws IOException {
