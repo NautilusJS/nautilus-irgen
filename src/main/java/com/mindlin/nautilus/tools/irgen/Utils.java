@@ -138,22 +138,6 @@ public class Utils {
 		return (boolean) value.getValue();
 	}
 	
-	public static String setField(String base, String fName, String value) {
-		return String.format("(%s.%s = (%s))", base, fName, value);
-	}
-	
-	public static String getField(String base, String fName) {
-		return String.format("(%s.%s)", base, fName);
-	}
-	
-	public static String cast(String type, String var) {
-		return String.format("((%s) %s)", type, var);
-	}
-	
-	public static String equals(String a, String b) {
-		return invoke(IRTypes.OBJECTS, "equals", a, b);
-	}
-	
 	public static String invoke(String base, String mName, String...params) {
 		return invoke(base, mName, Arrays.asList(params));
 	}
