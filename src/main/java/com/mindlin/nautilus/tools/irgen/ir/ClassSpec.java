@@ -89,6 +89,9 @@ public abstract class ClassSpec {
 		}
 		if (!imports.isEmpty())
 			writer.println();
+		
+		// Emit a SuppressWarnings b/c possible unused imports
+		writer.println("@SuppressWarnings(\"unused\")");
 
 		writer.emit("$M class $N ", this.getModifiers(), this.getSimpleName());
 		
