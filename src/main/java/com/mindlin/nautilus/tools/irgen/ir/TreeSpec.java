@@ -28,7 +28,7 @@ public class TreeSpec implements Orderable<TypeName> {
 	}
 	
 	public TypeName getName() {
-		return TypeName.wrap(this.source);
+		return ClassName.get(this.source);
 	}
 	
 	@Override
