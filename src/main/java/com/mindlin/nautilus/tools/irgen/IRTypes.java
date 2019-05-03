@@ -3,9 +3,13 @@ package com.mindlin.nautilus.tools.irgen;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
 
+import com.mindlin.nautilus.tools.irgen.ir.ClassName;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
+
 public class IRTypes {
 	public static final String RAW_PACKAGE = "com.mindlin.nautilus.tree";
 	public static final String TREE_CLASS = RAW_PACKAGE + ".Tree";
+	public static final ClassName TREE = new ClassName(RAW_PACKAGE, "Tree");
 	public static final String KIND_CLASS = TREE_CLASS + ".Kind";
 	
 	// Annotations
@@ -26,11 +30,11 @@ public class IRTypes {
 	public static final String OPTIONAL = ANNOTATION_PCKG + ".Optional";
 	
 	public static final String FS_PACKAGE = "com.mindlin.nautilus.fs";
-	public static final String SOURCEPOSITION = FS_PACKAGE + ".SourcePosition";
-	public static final String SOURCERANGE = FS_PACKAGE + ".SourceRange";
+	public static final ClassName SOURCEPOSITION = new ClassName(FS_PACKAGE, "SourcePosition");
+	public static final ClassName SOURCERANGE = new ClassName(FS_PACKAGE, "SourceRange");
 	
 	public static final String IMPL_PACKAGE = "com.mindlin.nautilus.tree.impl";
-	public static final String ABSTRACT_BASE = IMPL_PACKAGE + ".AbstractTree";
+	public static final ClassName ABSTRACT_BASE = new ClassName(IMPL_PACKAGE, "AbstractTree");
 	
 	public static final String OVERRIDE = "java.lang.Override";
 	public static final String COLLECTION = "java.util.Collection";
@@ -60,12 +64,10 @@ public class IRTypes {
 		}
 	}
 	
-	public static String withoutGenerics(String type) {
-		int idx = type.indexOf('<');
-		if (idx < 0)
-			return type;
-		
-		return type.substring(0, idx);
+	public static TypeName withoutGenerics(TypeName type) {
+		if (type instanceof TypeName.ParameterizedTypeName)
+			return ((TypeName.ParameterizedTypeName) type).getName();
+		return type;
 	}
 	
 	public static boolean isCollection(TypeMirror type) {
