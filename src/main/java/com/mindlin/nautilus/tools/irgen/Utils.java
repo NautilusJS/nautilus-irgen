@@ -76,7 +76,7 @@ public class Utils {
 	
 	@FunctionalInterface
 	public static interface Writable {
-		void write(Writer out) throws IOException;
+		void write(CodeWriter out);
 	}
 	
 	public static <T extends Writable> void writeAll(Writer out, Iterable<T> values, String separator) throws IOException {
