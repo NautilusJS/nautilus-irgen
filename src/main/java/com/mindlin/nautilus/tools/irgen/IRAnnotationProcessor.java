@@ -32,7 +32,7 @@ import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 @SupportedAnnotationTypes({IRTypes.TREE_NOIMPL, IRTypes.TREE_ADT, IRTypes.TREE_IMPL})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
-public class IRGenerator extends AbstractProcessor {
+public class IRAnnotationProcessor extends AbstractProcessor {
 	
 	protected Logger getLogger() {
 		return new Logger(this.processingEnv.getMessager());
@@ -183,7 +183,7 @@ public class IRGenerator extends AbstractProcessor {
 
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-		IRGenerator.main();
+		IRAnnotationProcessor.main();
 		Instant start = Instant.now();
 		
 		if (Utils.isVerbose())
