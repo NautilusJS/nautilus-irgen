@@ -21,6 +21,7 @@ import javax.lang.model.util.Elements;
 import com.mindlin.nautilus.tools.irgen.ir.Orderable;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class TreeBuilderProcessor extends AnnotationProcessorBase {
 	
@@ -80,14 +81,14 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 		return result;
 	}
 	
-	protected Collection<String> getParents(TypeElement target) {
-		Collection<String> parents = Utils.stream(target.getInterfaces())
+	protected Collection<TypeName> getParents(TypeElement target) {
+		Collection<TypeName> parents = Utils.stream(target.getInterfaces())
 			.map(iface -> (iface instanceof DeclaredType ? (DeclaredType) iface : null))
 			.filter(Objects::nonNull)
-			.map(Utils::getName)
+			.map(TypeName::wrap)
 			.collect(Collectors.toList());
 		// Remove Tree because it isn't real
-		parents.remove(IRTypes.TREE_CLASS);
+		parents.remove(IRTypes.TREE);
 		return parents;
 	}
 	
