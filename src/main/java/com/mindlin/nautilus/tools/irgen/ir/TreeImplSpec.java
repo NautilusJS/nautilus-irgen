@@ -1,16 +1,17 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
-import static com.mindlin.nautilus.tools.irgen.Utils.invoke;
-
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -18,7 +19,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
 import com.mindlin.nautilus.tools.irgen.IRTypes;
-import com.mindlin.nautilus.tools.irgen.IndentWriter;
 import com.mindlin.nautilus.tools.irgen.Utils;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.OverrideMethod;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
@@ -40,10 +40,10 @@ public class TreeImplSpec extends ClassSpec {
 	public final TypeElement source;
 	public final List<Element> sources = new ArrayList<>();
 	boolean extensible = false;
-	public final Set<String> parentIfaces = new HashSet<>();
-	public String parent = IRTypes.ABSTRACT_BASE;
+	public final Set<TypeName> parentIfaces = new HashSet<>();
+	public TypeName parent = IRTypes.ABSTRACT_BASE;
 	/** Base (implementing) type */
-	public String baseType;
+	public TypeName baseType;
 	String name;
 	String kind;
 	// Members
@@ -53,11 +53,9 @@ public class TreeImplSpec extends ClassSpec {
 	
 	// For child resolution
 	/** Contains all fields (declared & inherited) by name */
-	public final Map<String, FieldSpec> fields = new HashMap<>();
+	public final Map<String, FieldSpec> fields = new LinkedHashMap<>();
 	/** Contains all getters (declared & inherited) by name */
 	public final Map<String, GetterSpec> getters = new HashMap<>();
-	/** Contains field parameters (not including range stuff) for constructors */
-	public final List<ParameterSpec> params = new ArrayList<>();
 	
 	
 	public TreeImplSpec(TypeElement source, String name) {
@@ -77,13 +75,27 @@ public class TreeImplSpec extends ClassSpec {
 	}
 	
 	@Override
-	protected Optional<String> getSuper() {
+	protected Set<ClassName> getImports() {
+		Set<ClassName> result = new HashSet<>(super.getImports());
+		result.add(ClassName.get(Objects.class));
+		result.add(ClassName.get(Collections.class));
+		result.add(ClassName.get(List.class));
+		result.add(IRTypes.TREE);
+		result.add(IRTypes.SOURCEPOSITION);
+		result.add(IRTypes.SOURCERANGE);
+		if (this.baseType instanceof ClassName)
+			result.add((ClassName) this.baseType);
+		return result;
+	}
+	
+	@Override
+	protected Optional<TypeName> getSuper() {
 		return Optional.of(this.parent);
 	}
 	
 	@Override
-	protected Collection<String> getImplementing() {
-		return Arrays.asList(this.source.getQualifiedName().toString());
+	protected Collection<TypeName> getImplementing() {
+		return Arrays.asList(TypeName.wrap(this.source));
 	}
 	
 	@Override
@@ -91,8 +103,15 @@ public class TreeImplSpec extends ClassSpec {
 		return this.name;
 	}
 	
-	protected String getBaseTreeType() {
-		return this.baseType;//TODO
+	protected TypeName getBaseTreeType() {
+		return this.baseType;
+	}
+	
+	public List<ParameterSpec> getFieldParams() {
+		List<ParameterSpec> result = new ArrayList<>(this.declaredFields.size());
+		for (FieldSpec field : this.declaredFields)
+			result.add(new ParameterSpec(true, TypeName.wrap(field.type), field.name));
+		return result;
 	}
 	
 	public MethodSpec lookupMethod(String name) {
@@ -144,7 +163,7 @@ public class TreeImplSpec extends ClassSpec {
 	}
 	
 	@Override
-	protected void writeBody(IndentWriter writer) throws IOException {
+	protected void writeBody(CodeWriter writer) throws IOException {
 		super.writeBody(writer);
 		for (FieldSpec field : this.declaredFields) {
 			field.write(writer);
@@ -207,23 +226,8 @@ public class TreeImplSpec extends ClassSpec {
 		}
 		
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
-			out.write("this(");
-			
-			out.write("new ");
-			out.write(IRTypes.SOURCERANGE);
-			out.write("(");
-			out.write(START_PARAM.getName());
-			out.write(", ");
-			out.write(END_PARAM.getName());
-			out.write(")");
-			
-			for (ParameterSpec parameter : this.parameters) {
-				out.write(", ");
-				out.write(parameter.getName());
-			}
-			
-			out.write(");");
+		protected void writeBody(CodeWriter out) throws IOException {
+			out.emit("this(new $T($N, $N), $,N);", IRTypes.SOURCERANGE, START_PARAM, END_PARAM, this.parameters);
 			out.setEOL();
 		}
 	}
@@ -246,36 +250,36 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		protected Iterable<ParameterSpec> getParameters() {
+		protected List<ParameterSpec> getParameters() {
 			List<ParameterSpec> result = new ArrayList<>();
 			result.add(RANGE_PARAM);
-			result.addAll(this.superParams);
-			for (FieldSpec field: TreeImplSpec.this.declaredFields)
-				result.add(new ParameterSpec(true, field.type.toString(), field.name));
+			result.addAll(Utils.map(this.superParams, (param, idx) -> param.withName("$s" + idx)));
+			result.addAll(TreeImplSpec.this.getFieldParams());
 			return result;
 		}
 		
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
-			// Write call to super
-			out.write("super(range");
-			for (ParameterSpec superParam : this.superParams) {
-				out.format(", ");
-				out.write(superParam.getName());
-				//TODO: null checks
-			}
-			out.println(");");
+		protected void writeBody(CodeWriter out) throws IOException {
+			List<ParameterSpec> params = this.getParameters();
 			
+			// Write call to super
+			//TODO: null checks
+			out.emit("super($,N);", params.subList(0, this.superParams.size() + 1));
+			out.println();
+			
+			int i = this.superParams.size() + 1;
 			for (FieldSpec localField: TreeImplSpec.this.declaredFields) {
+				ParameterSpec param = params.get(i++);
 				boolean isPrimitive = IRTypes.isPrimitive(localField.type);
 				if (isPrimitive) {
-					out.format("this.%1$s = %1$s;\n", localField.name);
+					out.emit("this.$N = $N;\n", localField, param);
 					continue;
 				}
 				
 				boolean nnCheck = Utils.isNonNull(localField.type, true);
 				if (nnCheck) {
-					out.format("%s.requireNonNull(%s);\n", IRTypes.OBJECTS, localField.name);
+					out.emit("$T.requireNonNull($N);", IRTypes.OBJECTS, param);
+					out.println();
 				}
 				
 				boolean isCollection = IRTypes.isCollection(localField.type);
@@ -283,7 +287,8 @@ public class TreeImplSpec extends ClassSpec {
 					//TODO: check element nonnull
 				}
 				
-				out.format("this.%1$s = %1$s;\n", localField.name);
+				out.emit("this.$N = $N;", localField, param);
+				out.setEOL();
 			}
 		}
 	}
@@ -307,14 +312,14 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		public String getReturnType() {
-			return "int";
+		public TypeName getReturnType() {
+			return TypeName.INT;
 		}
 
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) throws IOException {
 			List<String> params = Utils.map(getMethods(MF_HASH), spec -> Utils.invoke("this", spec.getName()));
-			out.format("return %s;", Utils.invoke(IRTypes.OBJECTS, "hash", params));
+			out.emit("return $T.hash($,N);", Objects.class, params);
 			out.setEOL();
 		}
 	}
@@ -325,18 +330,18 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		public String getReturnType() {
-			return "boolean";
+		public TypeName getReturnType() {
+			return TypeName.BOOLEAN;
 		}
 		
 		@Override
 		protected Collection<ParameterSpec> getParameters() {
-			return Arrays.asList(new ParameterSpec(true, IRTypes.TREE_CLASS, "other"));
+			return Arrays.asList(new ParameterSpec(true, IRTypes.TREE, "other"));
 		}
 
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
-			out.format("return (other instanceof %s) && this.equivalentTo((%s) other);", TreeImplSpec.this.getBaseTreeType(), TreeImplSpec.this.getBaseTreeType());
+		protected void writeBody(CodeWriter out) throws IOException {
+			out.emit("return (other instanceof $T) && this.equivalentTo(($T) other);", TreeImplSpec.this.getBaseTreeType(), TreeImplSpec.this.getBaseTreeType());
 			out.setEOL();
 		}
 	}
@@ -348,8 +353,8 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		public String getReturnType() {
-			return "boolean";
+		public TypeName getReturnType() {
+			return TypeName.BOOLEAN;
 		}
 		
 		@Override
@@ -358,7 +363,7 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) throws IOException {
 			out.println("if (this == other)");
 			out.indentln("return true;");
 			
@@ -370,19 +375,19 @@ public class TreeImplSpec extends ClassSpec {
 			
 			// Primitive props: (a == b)
 			for (MethodSpec spec : TreeImplSpec.this.getMethods(MF_GPRIMITIVE | MF_EQUIV))
-				out.format("\n&& (%s == %s)", invoke("this", spec.getName()), invoke("other", spec.getName()));
+				out.emit("\n&& (this.$N() == other.$N())", spec, spec);
 			
 			// Object props: Objects.equals(a, b)
 			for (MethodSpec spec : TreeImplSpec.this.getMethods(MF_GOBJECT | MF_EQUIV))
-				out.format("\n&& %s", Utils.equals(invoke("this", spec.getName()), invoke("other", spec.getName())));
+				out.emit("\n&& $T.equals(this.$N(), other.$N())", Objects.class, spec, spec);
 			
 			// Child: Tree.equivalentTo(Tree, Tree)
 			for (MethodSpec spec : TreeImplSpec.this.getMethods(MF_GCHILD | MF_EQUIV))
-				out.format("\n&& %s", invoke(IRTypes.TREE_CLASS, "equivalentTo", invoke("this", spec.getName()), invoke("other", spec.getName())));
+				out.emit("\n&& $T.equivalentTo(this.$N(), other.$N())", IRTypes.TREE, spec, spec);
 			
 			// Children: Tree.equivalentTo(Collection<Tree>, Collection<Tree>)
 			for (MethodSpec spec : TreeImplSpec.this.getMethods(MF_GCHILDREN | MF_EQUIV))
-				out.format("\n&& %s", invoke(IRTypes.TREE_CLASS, "equivalentTo", invoke("this", spec.getName()), invoke("other", spec.getName())));
+				out.emit("\n&& $T.equivalentTo(this.$N(), other.$N())", IRTypes.TREE, spec, spec);
 			
 			out.println(";");
 			out.popIndent(2);
