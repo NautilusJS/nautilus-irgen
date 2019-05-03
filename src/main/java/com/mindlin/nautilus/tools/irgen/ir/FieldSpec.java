@@ -1,6 +1,5 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import javax.lang.model.type.TypeMirror;
@@ -25,7 +24,7 @@ public class FieldSpec implements Writable, Named {
 	}
 
 	@Override
-	public void write(CodeWriter out) throws IOException {
+	public void write(CodeWriter out) {
 		if (this.defaultValue == null) {
 			out.emit("$M $T $N;", this.modifiers, this.type, this.name);
 		} else {

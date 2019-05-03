@@ -1,6 +1,5 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,16 +29,16 @@ public abstract class MethodSpec implements Writable, Named {
 		return this.name;
 	}
 	
-	protected void writeBefore(@SuppressWarnings("unused") CodeWriter out) throws IOException {
+	protected void writeBefore(@SuppressWarnings("unused") CodeWriter out) {
 		
 	}
 	
 	protected abstract Collection<? extends ParameterSpec> getParameters();
 	
-	protected abstract void writeBody(CodeWriter out) throws IOException;
+	protected abstract void writeBody(CodeWriter out);
 	
 	@Override
-	public void write(CodeWriter out) throws IOException {
+	public void write(CodeWriter out) {
 		this.writeBefore(out);
 		
 		out.emit("$M $T $N($,n) {", this.getModifiers(), this.getReturnType(), this.getName(), this.getParameters());
@@ -60,7 +59,7 @@ public abstract class MethodSpec implements Writable, Named {
 		}
 
 		@Override
-		protected void writeBefore(CodeWriter out) throws IOException {
+		protected void writeBefore(CodeWriter out) {
 			out.println("@Override");
 			super.writeBefore(out);
 		}
@@ -95,7 +94,7 @@ public abstract class MethodSpec implements Writable, Named {
 		}
 		
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			out.emit("return this.$N;", this.field);
 			out.println();
 		}
@@ -117,7 +116,7 @@ public abstract class MethodSpec implements Writable, Named {
 		}
 		
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			TypeName type = this.getReturnType();
 			out.emit("$T result = this.$N;", type, this.field);
 			out.println();
@@ -150,7 +149,7 @@ public abstract class MethodSpec implements Writable, Named {
 		}
 
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			out.emit("$T result = super.$N();", this.type, this.name);
 			out.println();
 			

@@ -1,9 +1,7 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
-import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -137,12 +135,7 @@ public class CodeWriter extends IndentWriter {
 				break;
 			case "n":
 				if (value instanceof Writable)
-					try {
-						((Writable) value).write(this);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					((Writable) value).write(this);
 				else
 					throw new IllegalArgumentException("Can't cast to type");
 				break;

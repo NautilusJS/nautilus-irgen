@@ -45,17 +45,17 @@ public class ParameterSpec implements Writable, Named {
 	
 	@Override
 	public String toString() {
-		StringWriter sw = new StringWriter();
-		try (CodeWriter cw = new CodeWriter(sw)){
-			write(cw);
+		try (StringWriter sw = new StringWriter();
+				CodeWriter cw = new CodeWriter(sw)){
+			this.write(cw);
+			return sw.toString();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		return sw.toString();
 	}
 	
 	@Override
-	public void write(CodeWriter out) throws IOException {
+	public void write(CodeWriter out) {
 		if (this.isFinal)
 			out.append("final ");
 		

@@ -1,14 +1,15 @@
 package com.mindlin.nautilus.tools.irgen;
 
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import com.mindlin.nautilus.tools.irgen.ir.ClassSpec;
+import com.mindlin.nautilus.tools.irgen.ir.CodeWriter;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
 import com.mindlin.nautilus.tools.irgen.ir.ParameterSpec;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class FactorySpec extends ClassSpec {
 
@@ -39,8 +40,8 @@ public class FactorySpec extends ClassSpec {
 	}
 	
 	public class FactoryMethod extends MethodSpec {
-		final String type;
-		public FactoryMethod(String type, String name) {
+		final TypeName type;
+		public FactoryMethod(TypeName type, String name) {
 			super(name);
 			this.type = type;
 		}
@@ -51,7 +52,7 @@ public class FactorySpec extends ClassSpec {
 		}
 
 		@Override
-		public String getReturnType() {
+		public TypeName getReturnType() {
 			return this.type;
 		}
 
@@ -62,7 +63,7 @@ public class FactorySpec extends ClassSpec {
 		}
 
 		@Override
-		protected void writeBody(IndentWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			// TODO Auto-generated method stub
 			
 		}

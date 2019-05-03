@@ -226,7 +226,7 @@ public class TreeImplSpec extends ClassSpec {
 		}
 		
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			out.emit("this(new $T($N, $N), $,N);", IRTypes.SOURCERANGE, START_PARAM, END_PARAM, this.parameters);
 			out.setEOL();
 		}
@@ -259,7 +259,7 @@ public class TreeImplSpec extends ClassSpec {
 		}
 		
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			List<ParameterSpec> params = this.getParameters();
 			
 			// Write call to super
@@ -278,7 +278,7 @@ public class TreeImplSpec extends ClassSpec {
 				
 				boolean nnCheck = Utils.isNonNull(localField.type, true);
 				if (nnCheck) {
-					out.emit("$T.requireNonNull($N);", IRTypes.OBJECTS, param);
+					out.emit("$T.requireNonNull($N);", Objects.class, param);
 					out.println();
 				}
 				
@@ -317,7 +317,7 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			List<String> params = Utils.map(getMethods(MF_HASH), spec -> Utils.invoke("this", spec.getName()));
 			out.emit("return $T.hash($,N);", Objects.class, params);
 			out.setEOL();
@@ -340,7 +340,7 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			out.emit("return (other instanceof $T) && this.equivalentTo(($T) other);", TreeImplSpec.this.getBaseTreeType(), TreeImplSpec.this.getBaseTreeType());
 			out.setEOL();
 		}
@@ -363,7 +363,7 @@ public class TreeImplSpec extends ClassSpec {
 		}
 
 		@Override
-		protected void writeBody(CodeWriter out) throws IOException {
+		protected void writeBody(CodeWriter out) {
 			out.println("if (this == other)");
 			out.indentln("return true;");
 			
