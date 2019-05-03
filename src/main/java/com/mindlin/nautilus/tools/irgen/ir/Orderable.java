@@ -8,8 +8,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public interface Orderable {
-	public static <T extends Orderable> List<T> sorted(Collection<T> elements) {
+public interface Orderable<N> {
+	public static <N, T extends Orderable<N>> List<T> sorted(Collection<T> elements) {
 		// Put first/last
 		T first = null;
 		T last = null;
@@ -26,7 +26,7 @@ public interface Orderable {
 		if (last != null)
 			remaining.remove(last);
 		
-		ConcurrentMap<String, Wrapper<T>> segments = new ConcurrentHashMap<>();
+		ConcurrentMap<N, Wrapper<T>> segments = new ConcurrentHashMap<>();
 		// Insert all segments
 		elements.parallelStream()
 			.forEach(elem -> segments.put(elem.getOrderName(), new Wrapper<>(elem)));
@@ -35,7 +35,7 @@ public interface Orderable {
 		for (T elem : remaining) {
 			Wrapper<T> segment = segments.get(elem.getOrderName());
 			
-			for (String beforeValue : elem.getBefore()) {
+			for (N beforeValue : elem.getBefore()) {
 				Wrapper<T> before = segments.get(beforeValue);
 				if (before == null)
 					continue;
@@ -43,7 +43,7 @@ public interface Orderable {
 				before.after.add(segment);
 			}
 			
-			for (String afterValue : elem.getAfter()) {
+			for (N afterValue : elem.getAfter()) {
 				Wrapper<T> after = segments.get(afterValue);
 				if (after == null)
 					continue;
@@ -79,7 +79,7 @@ public interface Orderable {
 			if (s == null) {
 				throw new IllegalArgumentException("Topo failed (remaining: " + segments.keySet() + ")");
 			}
-			String name = s.value.getOrderName();
+			N name = s.value.getOrderName();
 			segments.remove(name);
 			s.after.parallelStream()
 					.forEach(segment -> segment.before.remove(s));
@@ -89,7 +89,7 @@ public interface Orderable {
 		return result;
 	}
 	
-	static class Wrapper<T extends Orderable> {
+	static class Wrapper<T extends Orderable<?>> {
 		final T value;
 		protected Set<Wrapper<T>> before = new HashSet<>();
 		protected Set<Wrapper<T>> after = new HashSet<>();
@@ -104,11 +104,11 @@ public interface Orderable {
 	/**
 	 * @return Names that should come before
 	 */
-	Set<String> getBefore();
+	Set<N> getBefore();
 	/**
 	 * @return Names that should come after
 	 */
-	Set<String> getAfter();
+	Set<N> getAfter();
 	
-	String getOrderName();
+	N getOrderName();
 }
