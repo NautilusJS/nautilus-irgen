@@ -23,7 +23,6 @@ import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.CollectionGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.NarrowGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.SimpleGetterSpec;
-import com.mindlin.nautilus.tools.irgen.ir.Named;
 import com.mindlin.nautilus.tools.irgen.ir.ParameterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
@@ -69,7 +68,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			GetterSpec old = gettersMap.put(getter.name, getter);
 			if (old != null) {
 				getters.remove(old);
-				getLogger().warn("Override getter '%s' on %s", getter.name, spec.getName());
+				getLogger().warn("Override getter '%s' on %s (%s)", getter.name, spec.getName(), getter.override);
 			}
 			getters.add(getter);
 		}
