@@ -4,12 +4,16 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -17,6 +21,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
+import com.mindlin.nautilus.tools.irgen.ir.AbstractTreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.ClassName;
 import com.mindlin.nautilus.tools.irgen.ir.FieldSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
@@ -30,14 +35,12 @@ import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class ImplProcessor extends AnnotationProcessorBase {
-	final Map<String, TreeSpec> niSpecs;
-	final Map<String, TreeSpec> iSpecs;
+	final Map<String, TreeSpec> specs;
 	final Map<String, TreeImplSpec> impls;
 	
-	public ImplProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv, Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs, Map<String, TreeImplSpec> impls) {
+	public ImplProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv, Map<String, TreeSpec> specs, Map<String, TreeImplSpec> impls) {
 		super(procEnv, annotation, roundEnv);
-		this.niSpecs = niSpecs;
-		this.iSpecs = iSpecs;
+		this.specs = specs;
 		this.impls = impls;
 	}
 	
@@ -55,20 +58,37 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		return new FieldSpec(Modifier.PROTECTED | Modifier.FINAL, getter.type, getter.fName);
 	}
 	
-	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, TreeSpec spec) {
+	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, List<TreeSpec> parents, TreeSpec spec) {
+		Deque<TreeSpec> queue = new LinkedList<>();
+		Set<TreeSpec> visited = new HashSet<>();
+		queue.add(spec);
+		visited.add(spec);
+		Consumer<TreeSpec> enqueueFn = parent -> {
+			if (visited.add(parent))
+				queue.add(parent);
+		};
+		
+		while (!queue.isEmpty()) {
+			TreeSpec parent = queue.pop();
+			this.resolveGetters(getters, gettersMap, parent, spec, enqueueFn);
+		}
+	}
+	
+	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, TreeSpec spec, TreeSpec base, Consumer<TreeSpec> enqueueFn) {
 		//TODO: fix parent traversal order
 		for (TypeName parent : spec.parents) {
-			TreeSpec parentSpec = this.niSpecs.get(parent.toString());
+			TreeSpec parentSpec = this.specs.get(parent.toString());
 			if (parentSpec == null)
 				continue;
-			this.resolveGetters(getters, gettersMap, parentSpec);
+			enqueueFn.accept(parentSpec);
 		}
 		
 		for (GetterSpec getter : spec.getters) {
 			GetterSpec old = gettersMap.put(getter.name, getter);
 			if (old != null) {
 				getters.remove(old);
-				getLogger().warn("Override getter '%s' on %s (%s)", getter.name, spec.getName(), getter.override);
+				if (!getter.override)
+					getLogger().warn("Override getter '%s' on %s from %s/%s (%s)", getter.name, base.getName(), spec.source.getSimpleName(), old.target.getEnclosingElement().getSimpleName(), getter.override);
 			}
 			getters.add(getter);
 		}
@@ -93,7 +113,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 	protected void buildFields(Map<String, FieldSpec> fields, TreeSpec spec) {
 		// Recurse through parents first, so they get overridden.
 		for (TypeName parent : spec.parents) {
-			TreeSpec parentSpec = this.niSpecs.get(parent.toString());//TODO: fix?
+			TreeSpec parentSpec = this.specs.get(parent.toString());//TODO: fix?
 			if (parentSpec == null) {
 				continue;
 			}
@@ -112,9 +132,9 @@ public class ImplProcessor extends AnnotationProcessorBase {
 	protected MethodSpec makeGetter(TreeImplSpec impl, GetterSpec getter, TreeImplSpec parent) {
 		int flags = 0;
 		if (getter.hash)
-			flags |= TreeImplSpec.MF_HASH;
+			flags |= AbstractTreeSpec.MF_HASH;
 		if (getter.compare)
-			flags |= TreeImplSpec.MF_EQUIV;
+			flags |= AbstractTreeSpec.MF_EQUIV;
 		
 		if (getter.optional) {
 			//TODO: fix
@@ -129,21 +149,21 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		String invName = Utils.getName(getter.invoker.getAnnotationType());
 		if (Objects.equals(invName, IRTypes.TREE_PROPERTY)) {
 			if (IRTypes.isCollection(getter.type)) {
-				flags |= TreeImplSpec.MF_GOBJECT;
+				flags |= AbstractTreeSpec.MF_GOBJECT;
 				return new CollectionGetterSpec(flags, getter.name, field, true);
 			} else {
 				if (IRTypes.isPrimitive(getter.type))
-					flags |= TreeImplSpec.MF_GPRIMITIVE;
+					flags |= AbstractTreeSpec.MF_GPRIMITIVE;
 				else
-					flags |= TreeImplSpec.MF_GOBJECT;
+					flags |= AbstractTreeSpec.MF_GOBJECT;
 				
 				return new SimpleGetterSpec(flags, getter.name, field);
 			}
 		} else if (Objects.equals(invName, IRTypes.TREE_CHILD)) {
-			flags |= TreeImplSpec.MF_GCHILD;
+			flags |= AbstractTreeSpec.MF_GCHILD;
 			return new SimpleGetterSpec(flags, getter.name, field);
 		} else if (Objects.equals(invName, IRTypes.TREE_CHILDREN)) {
-			flags |= TreeImplSpec.MF_GCHILDREN;
+			flags |= AbstractTreeSpec.MF_GCHILDREN;
 			return new CollectionGetterSpec(flags, getter.name, field, true);
 		} else {
 			throw new IllegalArgumentException("Unknown invName: " + invName);
@@ -178,16 +198,18 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		
 		impl.sources.addAll(spec.parents.stream()
 				.map(Objects::toString)//TODO: fix?
-				.map(this.niSpecs::get)
+				.map(this.specs::get)//TODO: only noimpls?
 				.filter(Objects::nonNull)
 				.map(parent -> parent.source)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList()));
 		
 		// Resolve getters
+		List<TreeSpec> parents = spec.getAllParents(tn -> this.specs.get(tn.toString()));
+		getLogger().warn("Ordered parents for %s: %s", spec.getName(), Utils.map(parents, parent -> parent.getName()));
 		Map<String, GetterSpec> gettersMap = new HashMap<>();
 		List<GetterSpec> resolvedGetters = new LinkedList<>();// LinkedList because we might be removing values from the middle
-		this.resolveGetters(resolvedGetters, gettersMap, spec);
+		this.resolveGetters(resolvedGetters, gettersMap, parents, spec);
 		
 		if (Utils.isVerbose())
 			getLogger().warn("Getters for %s: %s", spec.getName(), resolvedGetters);
@@ -225,7 +247,9 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		// Generate constructors
 		List<ParameterSpec> superParams = parentSpec == null ? Collections.emptyList() : parentSpec.getFieldParams();
 		impl.constructors.add(impl.new ForwardingCtorSpec(superParams));
-//		impl.constructors.add(new TreeImplSpec.RangeMergeCtorSpec(Utils.map(superArgs, arg -> new ParameterSpec()));
+		List<ParameterSpec> params = new ArrayList<>(superParams);
+		params.addAll(impl.getFieldParams());
+		impl.constructors.add(impl.new RangeMergeCtorSpec(params));
 		
 		return impl;
 	}
