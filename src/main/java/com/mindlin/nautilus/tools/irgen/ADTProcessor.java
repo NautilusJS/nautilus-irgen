@@ -8,9 +8,9 @@ import javax.lang.model.type.DeclaredType;
  * Generates abstract base classes
  * @author mailmindlin
  */
-public class ABCGenerator extends AnnotationProcessorBase {
+public class ADTProcessor extends AnnotationProcessorBase {
 
-	public ABCGenerator(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv) {
+	public ADTProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv) {
 		super(procEnv, annotation, roundEnv);
 	}
 	
