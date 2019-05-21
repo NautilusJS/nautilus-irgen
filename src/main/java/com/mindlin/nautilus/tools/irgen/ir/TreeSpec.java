@@ -3,10 +3,13 @@ package com.mindlin.nautilus.tools.irgen.ir;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -23,6 +26,7 @@ public class TreeSpec implements Orderable<TypeName> {
 	public List<TypeName> parents = new ArrayList<>();
 	public Map<String, Logger> kinds;
 	public List<GetterSpec> getters;
+	public Map<String, GetterSpec> resolvedGetters;
 	
 	public TreeSpec() {
 	}
@@ -55,15 +59,38 @@ public class TreeSpec implements Orderable<TypeName> {
 	public TypeName getOrderName() {
 		return this.getName();
 	}
+	
+	public Logger getLogger() {
+		return this.logger;
+	}
+	
+	public List<TreeSpec> getAllParents(Function<TypeName, TreeSpec> lookup) {
+		Deque<TreeSpec> queue = new LinkedList<>();
+		Set<TreeSpec> visited = new HashSet<>();
+		queue.add(this);
+		visited.add(this);
+		
+		while (!queue.isEmpty()) {
+			TreeSpec parent = queue.pop();
+			for (TypeName gpName : parent.parents) {
+				TreeSpec gp = lookup.apply(gpName);
+				if (gp == null || !visited.add(gp))
+					continue;
+				queue.add(gp);
+			}
+		}
+		return Orderable.sorted(visited);
+	}
 
 	public static class GetterSpec implements Orderable<String> {
 		public ExecutableElement target;
 		public AnnotationMirror invoker;
 		public TypeMirror type;
+		/** Wrapped field name */
 		public String fName;
+		/** Method name */
 		public String name;
 		public boolean override;
-		public int overrideTarget = -1;
 		public String boundValue = null;
 		
 		// Usage
