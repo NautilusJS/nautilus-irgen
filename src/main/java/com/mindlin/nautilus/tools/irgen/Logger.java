@@ -87,4 +87,38 @@ public class Logger {
 	public void error(String msg, Object...args) {
 		log(Kind.ERROR, msg, args);
 	}
+	
+	public void printStackTrace(Throwable t) {
+		try (PrintStream ps = new PrintStream(this.asOutputStream(Kind.ERROR))) {
+			t.printStackTrace(ps);
+		}
+	}
+	
+	public OutputStream asOutputStream(Kind level) {
+		return new FakeOutputStream(level);
+	}
+	
+	class FakeOutputStream extends OutputStream {
+		protected final Kind level;
+		
+		public FakeOutputStream(Kind level) {
+			this.level = level;
+		}
+		
+		@Override
+		public void write(int b) throws IOException {
+			//TODO: buffer?
+			Logger.this.log(level, "%c", b);
+		}
+		
+		@Override
+		public void write(byte[] b, int off, int len) throws IOException, IndexOutOfBoundsException {
+			Objects.requireNonNull(b);
+			if ((off < 0) || (off > b.length) || (len < 0) || ((off + len) > b.length) || ((off + len) < 0))
+				throw new IndexOutOfBoundsException();
+			if (len == 0)
+				return;
+			Logger.this.log(this.level, new String(b, off, len));
+		}
+	}
 }
