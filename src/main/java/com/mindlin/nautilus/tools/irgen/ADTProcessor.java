@@ -11,7 +11,7 @@ import javax.lang.model.type.DeclaredType;
 public class ADTProcessor extends AnnotationProcessorBase {
 
 	public ADTProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv) {
-		super(procEnv, annotation, roundEnv);
+		super(procEnv, annotation);
 	}
 	
 	public void process() {

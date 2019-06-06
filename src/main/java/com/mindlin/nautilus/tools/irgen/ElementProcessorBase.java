@@ -14,7 +14,7 @@ public class ElementProcessorBase extends AnnotationProcessorBase {
 	final TypeElement target;
 	
 	public ElementProcessorBase(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv, TypeElement target) {
-		super(procEnv, annotation, roundEnv);
+		super(procEnv, annotation);
 		this.target = target;
 	}
 	
