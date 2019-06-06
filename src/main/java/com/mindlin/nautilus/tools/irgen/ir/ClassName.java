@@ -1,5 +1,8 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import javax.lang.model.element.Element;
@@ -34,9 +37,19 @@ public class ClassName extends TypeName implements Named {
 	}
 	
 	public ClassName(String packageName, ClassName enclosingClass, String simpleName) {
+		this(packageName, enclosingClass, simpleName, Collections.emptyList());
+	}
+	
+	public ClassName(String packageName, ClassName enclosingClass, String simpleName, List<? extends AnnotationSpec> annotations) {
+		super(annotations);
 		this.packageName = packageName;
 		this.enclosingClass = enclosingClass;
 		this.simpleName = simpleName;
+	}
+	
+	@Override
+	public ClassName withAnnotations(List<? extends AnnotationSpec> annotations) {
+		return new ClassName(packageName, enclosingClass, simpleName, annotations);
 	}
 	
 	public String getPackageName() {
@@ -91,9 +104,28 @@ public class ClassName extends TypeName implements Named {
 		return Objects.hash(this.packageName, this.enclosingClass, this.simpleName);
 	}
 	
+	protected List<? extends ClassName> enclosingClasses() {
+		List<ClassName> result = new ArrayList<>();
+		for (ClassName current = this; current != null; current = current.enclosingClass)
+			result.add(current);
+		Collections.reverse(result);
+		return result;
+	}
+	
 	@Override
 	public void write(CodeWriter out) {
-		out.emitType(this);
+		if (out.isImported(this)) {
+			// Just write simple
+		} else if (this.enclosingClass != null) {
+			this.enclosingClass.write(out);
+			out.print(".");
+		} else if (!out.isPackageImported(this.packageName)) {
+			out.print(this.packageName);
+			out.print(".");
+		}
+		
+		this.writeAnnotations(out);
+		out.print(this.getSimpleName());
 	}
 	
 	@Override
