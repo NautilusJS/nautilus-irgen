@@ -5,6 +5,9 @@ import java.io.Writer;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
+@NonNullByDefault
 public class IndentWriter extends PrintWriter {
 	private static int nextNewline(String s, int off, int len) {
 		if (s.length() - off - len > 1024) {
