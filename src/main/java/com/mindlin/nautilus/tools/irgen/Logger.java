@@ -8,25 +8,29 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic.Kind;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
+@NonNullByDefault
 public class Logger {
 	private final Messager messager;
-	private final Element target;
-	private final AnnotationMirror site;
-	private final AnnotationValue value;
+	private final @Nullable Element target;
+	private final @Nullable AnnotationMirror site;
+	private final @Nullable AnnotationValue value;
 	
 	public Logger(Messager messager) {
 		this(messager, null, null, null);
 	}
 	
-	public Logger(Messager messager, Element target) {
+	public Logger(Messager messager, @Nullable Element target) {
 		this(messager, target, null, null);
 	}
 	
-	public Logger(Messager messager, Element target, AnnotationMirror site) {
+	public Logger(Messager messager, @Nullable Element target, @Nullable AnnotationMirror site) {
 		this(messager, target, site, null);
 	}
 	
-	public Logger(Messager messager, Element target, AnnotationMirror site, AnnotationValue value) {
+	public Logger(Messager messager, @Nullable Element target, @Nullable AnnotationMirror site, @Nullable AnnotationValue value) {
 		this.messager = Objects.requireNonNull(messager);
 		this.target = target;
 		this.site = site;

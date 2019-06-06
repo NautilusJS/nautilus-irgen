@@ -8,7 +8,28 @@
 	<version>0.0.1-alpha</version>
 
 	<packaging>jar</packaging>
-	
+
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.4.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.auto.service</groupId>
+			<artifactId>auto-service</artifactId>
+			<version>1.0-rc1</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jdt</groupId>
+			<artifactId>org.eclipse.jdt.annotation</artifactId>
+			<version>2.2.200</version>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -57,14 +78,7 @@
 		<!-- Test -->
 		<testSourceDirectory>src/test/java</testSourceDirectory>
 		<testOutputDirectory>bin/test-classes</testOutputDirectory>
-		<testResources>
-			<resource>
-				<directory>src/test/resources</directory>
-				<includes>
-					<include>**/*.js</include>
-				</includes>
-			</resource>
-		</testResources>
+		<testResources></testResources>
 
 		<!-- TODO: Support building examples -->
 		
