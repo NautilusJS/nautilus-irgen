@@ -138,7 +138,8 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 		return getters;
 	}
 
-	public TreeSpec buildTreeSpec(TypeElement target) {
+	public @Nullable TreeSpec buildTreeSpec(@NonNull TypeElement target) {
+		// Warner bound to target
 		Logger logger = getLogger().withTarget(target);
 		
 		if (!target.getTypeParameters().isEmpty())
@@ -148,6 +149,7 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 		
 		TreeSpec spec = new TreeSpec();
 		spec.source = target;
+		spec.logger = logger;
 		spec.kind = this.getKind();
 		spec.kinds = this.getValues(logger, mirrors);
 		
