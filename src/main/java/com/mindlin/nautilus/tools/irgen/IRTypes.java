@@ -1,5 +1,8 @@
 package com.mindlin.nautilus.tools.irgen;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
 
@@ -8,6 +11,7 @@ import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class IRTypes {
 	public static final String RAW_PACKAGE = "com.mindlin.nautilus.tree";
+	public static final String RAW_TYPE_PACKAGE = RAW_PACKAGE + ".type";
 	public static final String TREE_CLASS = RAW_PACKAGE + ".Tree";
 	public static final ClassName TREE = new ClassName(RAW_PACKAGE, "Tree");
 	public static final String KIND_CLASS = TREE_CLASS + ".Kind";
@@ -38,10 +42,11 @@ public class IRTypes {
 	
 	public static final String OVERRIDE = "java.lang.Override";
 	public static final String COLLECTION = "java.util.Collection";
+	public static final ClassName COLLECTION_C = ClassName.get(Collection.class);
 	public static final String LIST = "java.util.List";
 	public static final String SET = "java.util.Set";
 	public static final String MAP = "java.util.Map";
-	public static final String COLLECTIONS = "java.util.Collections";
+	public static final ClassName COLLECTIONS = ClassName.get(Collections.class);
 	public static final String OBJECTS = "java.util.Objects";
 	
 	public static boolean isPrimitive(TypeMirror type) {
@@ -66,7 +71,7 @@ public class IRTypes {
 	
 	public static TypeName withoutGenerics(TypeName type) {
 		if (type instanceof TypeName.ParameterizedTypeName)
-			return ((TypeName.ParameterizedTypeName) type).getName();
+			return ((TypeName.ParameterizedTypeName) type).getRaw();
 		return type;
 	}
 	
