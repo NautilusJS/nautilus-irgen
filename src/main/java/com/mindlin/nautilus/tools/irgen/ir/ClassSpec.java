@@ -66,12 +66,13 @@ public abstract class ClassSpec {
 		if (result != 0)
 			return result;
 		
+		// Glob imports come first
 		if (a.getSimpleName() == null)
 			return b.getSimpleName() == null ? 0 : -1;
 		if (b.getSimpleName() == null)
 			return 1;
 		
-		return a.getSimpleName().compareTo(b.getSimpleName());
+		return a.getQualifiedName().compareTo(b.getQualifiedName());
 	}
 
 	protected Element[] getSources() {
