@@ -117,14 +117,17 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 				missing.add(path);
 				continue;
 			}
-			for (TypeName _parent : spec.parents) {
-				//TODO: fix
-				String parent = _parent.toString();
-				sources.putIfAbsent(parent, path);
-				if (!specs.containsKey(parent))
-					missing.add(parent);
-				if (enqueued.add(parent))
-					queue.add(parent);
+			sources.put(path, null);
+			for (TypeName parent : spec.parents) {
+				String parentName = IRTypes.withoutGenerics(parent).toString();
+				
+				List<TreeSpec> psrcs = sources.computeIfAbsent(parentName, x -> new ArrayList<>());
+				if (psrcs != null)
+					psrcs.add(spec);
+				if (!specs.containsKey(parentName))
+					missing.add(parentName);
+				if (enqueued.add(parentName))
+					queue.add(parentName);
 			}
 		}
 		
