@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Filer;
+import javax.annotation.processing.FilerException;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -110,17 +112,20 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 			}));
 	}
 	
-	protected Set<String> getUnprocessed(TypeElement adt, RoundEnvironment roundEnv, Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs) {
+	protected Set<String> getUnprocessed(TypeElement adt, RoundEnvironment roundEnv, Map<String, TreeSpec> allSpecs) {
 		Stack<String> queue = new Stack<>();
 		Set<String> enqueued = new HashSet<>();
 		Set<String> missing = new HashSet<>();
 		
-		Map<String, String> sources = new HashMap<>();
-		Map<String, TreeSpec> specs = new HashMap<>(niSpecs);
-		specs.putAll(iSpecs);
+		Map<String, List<TreeSpec>> sources = new HashMap<>();
+		Map<String, TreeSpec> specs = new HashMap<>(allSpecs);
 		
-		queue.addAll(iSpecs.keySet());
-		enqueued.addAll(iSpecs.keySet());
+		for (Map.Entry<String, TreeSpec> spec : allSpecs.entrySet()) {
+			if (spec.getValue().kind != TreeSpec.Kind.IMPL)
+				continue;
+			queue.add(spec.getKey());
+			enqueued.add(spec.getKey());
+		}
 		
 		while (!queue.isEmpty()) {
 			String path = queue.pop();
@@ -152,14 +157,31 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, adt == null ? null : (DeclaredType) adt.asType(), TreeSpec.Kind.ADT);
 		if (!missing.isEmpty()) {
 			String mp = missing.iterator().next();
-			String mps = sources.get(mp);
-			getLogger().note("%s is missing %s", mps, mp);
-			TreeSpec mpsSpec = specs.get(mps);
-			for (TypeMirror candidate : this.processingEnv.getTypeUtils().directSupertypes(mpsSpec.source.asType())) {
-				String name = Utils.getName((DeclaredType) candidate);
-				if (!Objects.equals(name, mp))
-					continue;
-				getLogger().note("Found type %s (%s)", name, processor.buildTreeSpec((TypeElement) ((DeclaredType) candidate).asElement()));
+			List<TreeSpec> mpSources = sources.getOrDefault(mp, Collections.emptyList());
+			for (TreeSpec mpSource : mpSources)
+				this.getLogger()
+						.withTarget(mpSource.source)
+						.warn("Missing type %s", mp);//TODO: warn?
+			
+			Types types = this.processingEnv.getTypeUtils();
+			for (TreeSpec mpSource : mpSources) {
+				for (TypeMirror candidate : types.directSupertypes(mpSource.source.asType())) {
+					String name = Utils.getName((DeclaredType) candidate);
+					getLogger().note("Candidate %s", name);
+					if (!Objects.equals(name, mp))
+						continue;
+					try {
+						TypeElement target = (TypeElement) ((DeclaredType) candidate).asElement();
+						TreeSpec loaded = processor.buildTreeSpec(target);
+						allSpecs.put(Utils.getName(target), loaded);
+						getLogger().note("Found type %s (%s)", name, loaded);
+					} catch (Exception e) {
+						getLogger().error("Error processing %s (%s)", name, e.getLocalizedMessage());
+						try (PrintStream ps = new PrintStream(getLogger().asOutputStream(Kind.ERROR))) {
+							e.printStackTrace(ps);
+						}
+					}
+				}
 			}
 		}
 		
@@ -196,7 +218,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		
 		for (TreeImplSpec impl : impls) {
 			try {
-				specImpl.write(this.processingEnv.getFiler());
+				impl.write(filer);
 			} catch (IOException e) {
 				getLogger().error("Error writing impl %s: %s", impl.getClassName(), e.getMessage());
 				e.printStackTrace();
