@@ -153,7 +153,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		return missing;
 	}
 	
-	protected void processImplOutputs(TypeElement annotation, RoundEnvironment roundEnv, Map<String, TreeSpec> niSpecs, Map<String, TreeSpec> iSpecs) {
+	protected Map<String, TreeImplSpec> processImplOutputs(TypeElement annotation, Map<String, TreeSpec> specs) {
 		DeclaredType annotationType = (DeclaredType) annotation.asType();
 		
 		Map<String, TreeImplSpec> impls = new HashMap<>();
@@ -161,7 +161,9 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		ImplProcessor processor = new ImplProcessor(this.processingEnv, annotationType, specs, impls);
 		
 		// Order impl gen
-		List<TreeSpec> implOrder = Orderable.sorted(new ArrayList<>(iSpecs.values()));
+		List<TreeSpec> implOrder = new ArrayList<>(specs.values());
+		implOrder.removeIf(spec -> spec.kind != TreeSpec.Kind.IMPL);
+		implOrder = Orderable.sorted(implOrder);
 		if (Utils.isVerbose())
 			getLogger().note("Impl order: %s", implOrder.stream().map(TreeSpec::getName).collect(Collectors.toList()));
 		
@@ -170,8 +172,12 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 			TreeImplSpec specImpl = processor.buildTreeImpl(spec.source, spec);
 			impls.put(spec.getName().toString(), specImpl);
 			if (Utils.isVerbose())
-				logger.warn("SpecImpl: %s", specImpl);
-			
+				logger.warn("SpecImpl: %s -> %s", spec.getName().toString(), specImpl);
+		}
+		
+		return impls;
+	}
+	
 			try {
 				specImpl.write(this.processingEnv.getFiler());
 			} catch (IOException e) {
