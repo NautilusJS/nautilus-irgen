@@ -34,6 +34,10 @@ public class FieldSpec implements Writable, Named {
 		}
 	}
 	
+	public TypeName getType() {
+		return TypeName.wrap(type);
+	}
+	
 	@Override
 	public String toString() {
 		return String.format("FieldSpec{mods=%s,type=%s,name=%s}", this.modifiers, this.type, this.name);

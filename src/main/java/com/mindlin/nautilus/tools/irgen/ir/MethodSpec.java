@@ -102,7 +102,7 @@ public abstract class MethodSpec implements Writable, Named {
 
 		@Override
 		public TypeName getReturnType() {
-			return TypeName.wrap(this.field.type);
+			return this.field.getType();
 		}
 		
 		@Override
@@ -130,7 +130,8 @@ public abstract class MethodSpec implements Writable, Named {
 		
 		@Override
 		public TypeName getReturnType() {
-			return TypeName.wrap(this.field.type);
+			return this.field.getType();
+		}
 		}
 		
 		@Override
