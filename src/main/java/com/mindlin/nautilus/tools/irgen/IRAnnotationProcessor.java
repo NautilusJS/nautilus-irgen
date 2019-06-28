@@ -45,7 +45,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 	protected Map<String, TreeSpec> processTrees(TypeElement annotation, RoundEnvironment roundEnv) {
 		DeclaredType annotationType = (DeclaredType) annotation.asType();
 		
-		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType, roundEnv);
+		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType);
 		
 		Set<? extends Element> targets = roundEnv.getElementsAnnotatedWith(annotation);
 		if (targets.isEmpty())
@@ -74,7 +74,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 	protected Map<String, TreeSpec> processTreesMP(TypeElement annotation, RoundEnvironment roundEnv) {
 		DeclaredType annotationType = (DeclaredType) annotation.asType();
 		
-		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType, roundEnv);
+		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, annotationType);
 		
 		Set<? extends Element> targets = roundEnv.getElementsAnnotatedWith(annotation);
 		if (targets.isEmpty())
@@ -134,7 +134,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		if (Utils.isVerbose())
 			getLogger().note("Extra specs: %s", extra);
 		
-		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, (DeclaredType) adt.asType(), roundEnv);
+		TreeBuilderProcessor processor = new TreeBuilderProcessor(this.processingEnv, adt == null ? null : (DeclaredType) adt.asType(), TreeSpec.Kind.ADT);
 		if (!missing.isEmpty()) {
 			String mp = missing.iterator().next();
 			String mps = sources.get(mp);
@@ -156,8 +156,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		
 		Map<String, TreeImplSpec> impls = new HashMap<>();
 		
-		ImplProcessor processor = new ImplProcessor(this.processingEnv, annotationType, roundEnv, niSpecs, iSpecs, impls);
-		
+		ImplProcessor processor = new ImplProcessor(this.processingEnv, annotationType, specs, impls);
 		
 		// Order impl gen
 		List<TreeSpec> implOrder = Orderable.sorted(new ArrayList<>(iSpecs.values()));
