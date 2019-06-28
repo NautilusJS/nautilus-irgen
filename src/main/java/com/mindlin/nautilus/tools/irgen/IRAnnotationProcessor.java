@@ -359,10 +359,16 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 			
 			if (impl != null)
 				this.processImplOutputs(impl, roundEnv, niSpecs, iSpecs);
+		Instant postproc = Instant.now();
+		Instant buildDone;
 		}
 		
-		Duration elapsed = Duration.between(start, Instant.now());
-		getLogger().note("Ran in %d.%09d", elapsed.getSeconds(), elapsed.getNano());
+		Instant end = Instant.now();
+		Duration inElapsed = Duration.between(start, postproc);
+		Duration buildElapsed = Duration.between(postproc, buildDone);
+		Duration outElapsed = Duration.between(buildDone, end);
+		Duration elapsed = Duration.between(start, end);
+		getLogger().note("Ran in %d.%09d (%d.%09d in/%d.%09d build/%d.%09d out)", elapsed.getSeconds(), elapsed.getNano(), inElapsed.getSeconds(), inElapsed.getNano(), buildElapsed.getSeconds(), buildElapsed.getNano(), outElapsed.getSeconds(), outElapsed.getNano());
 		
 		return true;
 	}
