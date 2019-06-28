@@ -110,6 +110,11 @@ public abstract class MethodSpec implements Writable, Named {
 			out.emit("return this.$N;", this.field);
 			out.println();
 		}
+		
+		@Override
+		public String toString() {
+			return String.format("SimpleGetterSpec{%s %s()}", this.getReturnType().toString(), this.name);
+		}
 	}
 	
 	public static class CollectionGetterSpec extends OverrideMethod {
