@@ -12,8 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -28,7 +26,6 @@ import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.CollectionGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.NarrowGetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.SimpleGetterSpec;
-import com.mindlin.nautilus.tools.irgen.ir.ParameterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
@@ -44,7 +41,17 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		this.impls = impls;
 	}
 	
-	public ClassName getResolvedSuperclass(Collection<TypeName> parents) {
+	protected TreeImplSpec getSuperclassImpl(Collection<? extends TypeName> parents) {
+		return parents.stream()
+				.map(Object::toString)
+				.map(this.impls::get)
+				.filter(Objects::nonNull)
+				.findFirst()
+				.orElse(null);
+	}
+	
+	@Deprecated
+	protected ClassName getResolvedSuperclass(Collection<? extends TypeName> parents) {
 		return parents.stream()
 				.map(Object::toString)//TODO: fix?
 				.map(this.impls::get)
@@ -183,26 +190,15 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		
 		// Resolve heritage
 		impl.baseType = spec.getName();
-		impl.parent = this.getResolvedSuperclass(spec.parents);
-		TreeImplSpec parentSpec = this.impls.get(impl.parent.toString());//TODO fix?
+		TreeImplSpec resolvedParent = impl.resolvedParent = getSuperclassImpl(spec.parents);
+		impl.parent = impl.resolvedParent == null ? IRTypes.ABSTRACT_BASE : resolvedParent.getClassName();
 		impl.parentIfaces.add(spec.getName());
 		
 		// Add sources for Filer dependency stuff
-		impl.sources.addAll(spec.parents.stream()
-				.map(Objects::toString)//TODO: fix?
-				.map(this.impls::get)
+		spec.parents.stream()
+				.map(this::resolveSource)
 				.filter(Objects::nonNull)
-				.map(parent -> parent.source)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList()));
-		
-		impl.sources.addAll(spec.parents.stream()
-				.map(Objects::toString)//TODO: fix?
-				.map(this.specs::get)//TODO: only noimpls?
-				.filter(Objects::nonNull)
-				.map(parent -> parent.source)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList()));
+				.forEach(impl.sources::add);
 		
 		// Resolve getters
 		List<TreeSpec> parents = spec.getAllParents(tn -> this.specs.get(tn.toString()));
