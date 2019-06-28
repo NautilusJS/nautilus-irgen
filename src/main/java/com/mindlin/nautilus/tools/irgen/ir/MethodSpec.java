@@ -18,6 +18,10 @@ public abstract class MethodSpec implements Writable, Named {
 		this.name = Objects.requireNonNull(name);
 	}
 	
+	public void getImports(Collection<? super ClassName> result) {
+		result.addAll(TypeName.getImportable(this.getReturnType()));
+	}
+	
 	protected int getModifiers() {
 		return 0;
 	}
@@ -84,6 +88,12 @@ public abstract class MethodSpec implements Writable, Named {
 		}
 		
 		@Override
+		public void getImports(Collection<? super ClassName> result) {
+			super.getImports(result);
+			result.addAll(TypeName.getImportable(field.getType()));
+		}
+		
+		@Override
 		protected int getModifiers() {
 			return Modifier.PUBLIC;
 		}
@@ -108,6 +118,12 @@ public abstract class MethodSpec implements Writable, Named {
 			this.flags = flags;
 			this.field = Objects.requireNonNull(field);
 			this.immutable = immutable;
+		}
+		
+		@Override
+		public void getImports(Collection<? super ClassName> result) {
+			super.getImports(result);
+			result.add(IRTypes.COLLECTIONS);
 		}
 		
 		@Override

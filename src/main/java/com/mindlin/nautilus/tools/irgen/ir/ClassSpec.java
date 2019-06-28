@@ -81,8 +81,14 @@ public abstract class ClassSpec {
 	
 	protected abstract String getSimpleName();
 	
-	protected Set<ClassName> getImports() {
-		return Collections.emptySet();
+	protected void getImports(Collection<? super ClassName> result) {
+		result.add(ClassName.get(Generated.class));
+		
+		for (CtorSpec ctor : this.getConstructors())
+			ctor.getImports(result);
+		
+		for (MethodSpec method : this.getMethods())
+			method.getImports(result);
 	}
 	
 	public ClassName getClassName() {
