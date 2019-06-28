@@ -1,5 +1,8 @@
 package com.mindlin.nautilus.tools.irgen;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Objects;
 
 import javax.annotation.processing.Messager;
