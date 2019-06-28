@@ -1,6 +1,8 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,11 +13,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.annotation.Generated;
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
 import javax.tools.JavaFileObject;
 
 import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+
 public abstract class ClassSpec {
 	protected static String getNamespace(String pkg) {
 		if (pkg == null)
@@ -149,7 +153,8 @@ public abstract class ClassSpec {
 	}
 	
 	protected void writeImports(CodeWriter writer) {
-		List<ClassName> imports = new ArrayList<>(this.getImports());
+		List<ClassName> imports = new ArrayList<>();
+		this.getImports(imports);
 		if (imports.isEmpty())
 			return;
 		
@@ -159,8 +164,13 @@ public abstract class ClassSpec {
 		Set<String> names = new HashSet<>();
 		String lastNamespace = null;
 		for (ClassName ipclz : imports) {
-			if (ipclz.getEnclosingClass() == null && packageImports.contains(ipclz.getPackageName()))
-				continue;
+			if (ipclz.getEnclosingClass() == null) {
+				if (packageImports.contains(ipclz.getPackageName()))
+					continue;
+			} else {
+				if (imports.contains(ipclz.getEnclosingClass()))
+					continue;
+			}
 			if (names.contains(ipclz.getSimpleName()))
 				// Another import exists with the same name
 				continue;
@@ -181,6 +191,9 @@ public abstract class ClassSpec {
 		writer.println();
 	}
 	
+	/**
+	 * @throws IOException 
+	 */
 	protected void writeHeritage(CodeWriter writer) throws IOException {
 		Optional<TypeName> parent = this.getSuper();
 		if (parent.isPresent())
@@ -191,6 +204,9 @@ public abstract class ClassSpec {
 			writer.emit("implements $,T ", implementing);
 	}
 	
+	/**
+	 * @throws IOException 
+	 */
 	protected void writeBody(@SuppressWarnings("unused") CodeWriter writer) throws IOException {
 		
 	}
@@ -207,8 +223,11 @@ public abstract class ClassSpec {
 		this.writeImports(writer);
 		
 		// Emit a SuppressWarnings b/c possible unused imports
-		writer.println("@SuppressWarnings(\"unused\")");
-
+//		writer.println("@SuppressWarnings(\"unused\")");
+		
+		// Mark with @Generated
+		writer.emit("@$T(value = $L)\n", Generated.class, "com.mindlin.nautilus.tools.irgen.IRAnnotationProcessor");
+		
 		writer.emit("$M class $N ", this.getModifiers(), this.getSimpleName());
 		
 		this.writeHeritage(writer);
