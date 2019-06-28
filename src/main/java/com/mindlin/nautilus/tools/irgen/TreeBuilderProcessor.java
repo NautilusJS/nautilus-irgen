@@ -24,23 +24,34 @@ import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class TreeBuilderProcessor extends AnnotationProcessorBase {
+	protected static TreeSpec.@Nullable Kind getKind(@Nullable DeclaredType annotation) {
+		if (annotation == null)
+			return null;
+		try {
+			switch (Utils.getName(annotation)) {
+				case IRTypes.TREE_IMPL:
+					return TreeSpec.Kind.IMPL;
+				case IRTypes.TREE_NOIMPL:
+					return TreeSpec.Kind.NO_IMPL;
+				case IRTypes.TREE_ADT:
+					return TreeSpec.Kind.ADT;
+				default:
+					return null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	private final TreeSpec.@Nullable Kind kind;
 	
 	public TreeBuilderProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv) {
 		super(procEnv, annotation, roundEnv);
 	}
 	
 	protected TreeSpec.Kind getKind() {
-		String name = Utils.getName(this.annotation);
-		switch (name) {
-			case IRTypes.TREE_IMPL:
-				return TreeSpec.Kind.IMPL;
-			case IRTypes.TREE_NOIMPL:
-				return TreeSpec.Kind.NO_IMPL;
-			case IRTypes.TREE_ADT:
-				return TreeSpec.Kind.ADT;
-			default:
-				return null;
-		}
+		return this.kind;
+	}
 	}
 
 	@SuppressWarnings("unchecked")
