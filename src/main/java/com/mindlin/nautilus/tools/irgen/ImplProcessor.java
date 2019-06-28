@@ -235,9 +235,11 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		for (GetterSpec getter : resolvedGetters) {
 			if (Utils.isVerbose())
 				getLogger().warn("Add getter %s to %s", getter.name, spec.getName());
-			MethodSpec method = this.makeGetter(impl, getter, parentSpec);
-			if (method == null)
+			MethodSpec method = this.makeGetter(impl, getter);
+			if (method == null) {
+				getterLogger.warn("Failed to generate method from spec on %s", implName);
 				continue;
+			}
 			impl.declaredMethods.add(method);	
 		}
 		
