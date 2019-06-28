@@ -129,6 +129,25 @@ public abstract class ClassSpec {
 		}
 	}
 	
+	public static class OutputInfo {
+		public String className;
+		public Element[] sources;
+		public String value;
+	}
+	
+	public OutputInfo writeMP() throws IOException {
+		String value;
+		try (StringWriter sw = new StringWriter()) {
+			this.write(sw);
+			value = sw.toString();
+		}
+		OutputInfo result = new OutputInfo();
+		result.className = getClassName().toString();
+		result.sources = this.getSources();
+		result.value = value;
+		return result;
+	}
+	
 	protected void writeImports(CodeWriter writer) {
 		List<ClassName> imports = new ArrayList<>(this.getImports());
 		if (imports.isEmpty())
