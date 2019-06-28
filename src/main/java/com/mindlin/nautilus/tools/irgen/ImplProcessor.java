@@ -247,11 +247,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		impl.buildMethods();
 		
 		// Generate constructors
-		List<ParameterSpec> superParams = parentSpec == null ? Collections.emptyList() : parentSpec.getFieldParams();
-		impl.constructors.add(impl.new ForwardingCtorSpec(superParams));
-		List<ParameterSpec> params = new ArrayList<>(superParams);
-		params.addAll(impl.getFieldParams());
-		impl.constructors.add(impl.new RangeMergeCtorSpec(params));
+		impl.constructors.add(impl.new ForwardingCtorSpec());
+		impl.constructors.add(impl.new RangeMergeCtorSpec());
 		
 		return impl;
 	}
