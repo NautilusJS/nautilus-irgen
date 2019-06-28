@@ -3,6 +3,7 @@ package com.mindlin.nautilus.tools.irgen;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Modifier;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -23,6 +25,11 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+
+import org.eclipse.jdt.annotation.Nullable;
+
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
 public class Utils {
 	public static boolean MP = false;
@@ -61,6 +68,18 @@ public class Utils {
 		}
 	}
 	
+	public static <T> void writeList(CodeWriter out, Iterable<T> values, BiConsumer<CodeWriter, T> serializer, String separator) throws IOException {
+		Iterator<T> iter = values.iterator();
+		while (true) {
+			T value = iter.next();
+			serializer.accept(out, value);
+			if (iter.hasNext())
+				out.append(separator);
+			else
+				return;
+		}
+	}
+	
 	public static String stringifyList(Iterable<String> values, String separator) {
 		StringBuilder sb = new StringBuilder();
 		Iterator<String> iter = values.iterator();
@@ -79,7 +98,7 @@ public class Utils {
 		void write(CodeWriter out);
 	}
 	
-	public static <T extends Writable> void writeAll(Writer out, Iterable<T> values, String separator) throws IOException {
+	public static <T extends Writable> void writeAll(CodeWriter out, Iterable<T> values, String separator) throws IOException {
 		Iterator<T> iter = values.iterator();
 		while (iter.hasNext()) {
 			T value = iter.next();
@@ -96,8 +115,12 @@ public class Utils {
 		return result;
 	}
 	
-	protected static String immutableMethod(String type) {
-		switch (IRTypes.withoutGenerics(type)) {
+	public static <T extends AnnotationValue> Map<String, T> derefValuesLazy(Map<? extends ExecutableElement, T> src) {
+		return new LazyAnnotationValueMap<>(src);
+	}
+	
+	public static String immutableMethod(TypeName type) {
+		switch (IRTypes.withoutGenerics(type).toString()) {
 		case IRTypes.COLLECTION:
 			return "unmodifiableCollection";
 		case IRTypes.LIST:
@@ -109,10 +132,6 @@ public class Utils {
 		default:
 			throw new IllegalArgumentException("Unable to make type " + type + " unmodifiable.");
 		}
-	}
-	
-	public static String unmodifiable(String cType, String var) {
-		return invoke(IRTypes.COLLECTIONS, immutableMethod(cType), cast(cType, var));
 	}
 	
 	public static AnnotationMirror getAnnotationOfType(TypeMirror type, String annotationName) {
@@ -128,14 +147,7 @@ public class Utils {
 	
 	public static boolean isNonNull(TypeMirror type, boolean requireCheck) {
 		AnnotationMirror nna = getAnnotationOfType(type, IRTypes.NONNULL);
-		if (nna == null)
-			return false;
-		if (!requireCheck)
-			return true;
-		AnnotationValue value = derefValues(nna.getElementValues()).get("check");
-		if (value == null)
-			return false;
-		return (boolean) value.getValue();
+		return nna != null;
 	}
 	
 	public static String invoke(String base, String mName, String...params) {
@@ -143,7 +155,7 @@ public class Utils {
 	}
 	
 	public static String invoke(String base, String mName, Iterable<String> params) {
-		return String.format("(%s.%s(%s))", base, mName, Utils.stringifyList(params, ", "));
+		return String.format("%s.%s(%s)", base, mName, Utils.stringifyList(params, ", "));
 	}
 	
 	public static <T, U> List<U> map(Collection<? extends T> data, Function<T, U> mapper) {
@@ -151,6 +163,26 @@ public class Utils {
 		for (T value : data)
 			result.add(mapper.apply(value));
 		return result;
+	}
+	
+	/*public static <T, U> List<U> map(Collection<? extends T> data, IntObjFunction<T, U> mapper) {
+		List<U> result = new ArrayList<>(data.size());
+		int idx = 0;
+		for (T value : data)
+			result.add(mapper.apply(value, idx++));
+		return result;
+	}*/
+	
+	public static <Tk, Tv, Rk, Rv> Map<Rk, Rv> map(Map<Tk, Tv> data, Function<? super Tk, ? extends Rk> keyMapper, Function<? super Tv, ? extends Rv> valueMapper) {
+		return map(data, new HashMap<>(), keyMapper, valueMapper);
+	}
+	
+	public static <Tk, Tv, Rk, Rv, R extends Map<Rk, Rv>> R map(Map<Tk, Tv> src, R dst, Function<? super Tk, ? extends Rk> keyMapper, Function<? super Tv, ? extends Rv> valueMapper) {
+		Objects.requireNonNull(src);
+		Objects.requireNonNull(dst);
+		for (Map.Entry<Tk, Tv> entry : src.entrySet())
+			dst.put(keyMapper.apply(entry.getKey()), valueMapper.apply(entry.getValue()));
+		return dst;
 	}
 	
 	public static <T, E extends Exception, U> List<U> emap(Iterable<? extends T> data, EFunction<T, E, U> mapper) throws E {
@@ -189,6 +221,11 @@ public class Utils {
 	
 	public static String getName(Element element) {
 		return ((TypeElement) element).getQualifiedName().toString();
+	}
+	
+	@FunctionalInterface
+	public static interface IntObjFunction<T, R> {
+		R apply(T value, int index);
 	}
 	
 	@FunctionalInterface
