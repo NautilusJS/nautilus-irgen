@@ -15,6 +15,7 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -27,10 +28,12 @@ import javax.lang.model.type.TypeMirror;
 
 import com.mindlin.nautilus.tools.irgen.ir.ClassSpec.OutputInfo;
 import com.mindlin.nautilus.tools.irgen.util.Orderable;
+import com.google.auto.service.AutoService;
 import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
+@AutoService(Processor.class)
 @SupportedAnnotationTypes({IRTypes.TREE_NOIMPL, IRTypes.TREE_ADT, IRTypes.TREE_IMPL})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class IRAnnotationProcessor extends AbstractProcessor {
