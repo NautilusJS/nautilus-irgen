@@ -61,6 +61,14 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 	protected TreeSpec.Kind getKind() {
 		return this.kind;
 	}
+	
+	@Override
+	protected boolean matchAnnotation(DeclaredType annotation) {
+		if (this.annotation != null)
+			return super.matchAnnotation(annotation);
+		// Fallback if we just have the TreeSpec.Kind
+		TreeSpec.Kind kind = getKind(annotation);
+		return this.kind == kind;
 	}
 
 	@SuppressWarnings("unchecked")
