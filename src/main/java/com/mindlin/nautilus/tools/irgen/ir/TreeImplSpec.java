@@ -76,17 +76,23 @@ public class TreeImplSpec extends ClassSpec {
 	}
 	
 	@Override
-	protected Set<ClassName> getImports() {
-		Set<ClassName> result = new HashSet<>(super.getImports());
-		result.add(ClassName.get(Objects.class));
-		result.add(ClassName.get(Collections.class));
-		result.add(ClassName.get(List.class));
+	protected void getImports(Collection<? super ClassName> result) {
+		super.getImports(result);
+//		result.add(ClassName.get(Objects.class));
+//		result.add(ClassName.get(Collections.class));
+//		result.add(ClassName.get(List.class));
 		result.add(IRTypes.TREE);
 		result.add(IRTypes.SOURCEPOSITION);
 		result.add(IRTypes.SOURCERANGE);
+		
+		// Import field types (if possible)
+		for (FieldSpec field : this.declaredFields)
+			this.addClasses(field.getType(), result);
+		
+		// Import tree.* and because we use so many things from them
+//		result.add(new ClassName(IRTypes.RAW_PACKAGE, null));
 		if (this.baseType instanceof ClassName)
 			result.add((ClassName) this.baseType);
-		return result;
 	}
 	
 	@Override
@@ -156,11 +162,7 @@ public class TreeImplSpec extends ClassSpec {
 
 	@Override
 	protected int getModifiers() {
-		int result = Modifier.PUBLIC;
-//			if (!this.extensible)
-//				result |= Modifier.FINAL;
-		
-		return result;
+		return super.getModifiers() | Modifier.PUBLIC;
 	}
 	
 	@Override
