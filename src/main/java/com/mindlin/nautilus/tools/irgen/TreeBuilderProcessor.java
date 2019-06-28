@@ -42,7 +42,7 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 				default:
 					return null;
 			}
-		} catch (Exception e) {
+		} catch (@SuppressWarnings("unused") Exception e) {
 			return null;
 		}
 	}
@@ -99,6 +99,7 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 				elem = (VariableElement) impl.getValue();
 			} catch (ClassCastException e) {
 				local.error("Unexpected value for Impl#value()");
+				local.printStackTrace(e);
 				continue;
 			}
 			result.put(elem.getSimpleName().toString(), local);
