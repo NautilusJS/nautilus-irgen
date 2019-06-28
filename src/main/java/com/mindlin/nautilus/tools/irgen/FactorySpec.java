@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
 import com.mindlin.nautilus.tools.irgen.ir.ClassSpec;
-import com.mindlin.nautilus.tools.irgen.ir.CodeWriter;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec;
 import com.mindlin.nautilus.tools.irgen.ir.ParameterSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TypeName;
