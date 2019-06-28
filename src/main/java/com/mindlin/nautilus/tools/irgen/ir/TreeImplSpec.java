@@ -20,6 +20,7 @@ import javax.lang.model.element.TypeElement;
 
 import com.mindlin.nautilus.tools.irgen.IRTypes;
 import com.mindlin.nautilus.tools.irgen.Utils;
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
 import com.mindlin.nautilus.tools.irgen.ir.MethodSpec.OverrideMethod;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
 

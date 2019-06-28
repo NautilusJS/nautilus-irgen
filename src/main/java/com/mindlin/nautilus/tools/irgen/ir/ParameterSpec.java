@@ -2,13 +2,16 @@ package com.mindlin.nautilus.tools.irgen.ir;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Objects;
 
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+import com.mindlin.nautilus.tools.irgen.util.Named;
 
 public class ParameterSpec implements Writable, Named {
-	protected final boolean isFinal;
+	public final boolean isFinal;
 	protected final TypeName type;
-	protected final boolean varargs;
+	public final boolean varargs;
 	protected final String name;
 	
 	public ParameterSpec(TypeName type, String name) {
@@ -31,6 +34,8 @@ public class ParameterSpec implements Writable, Named {
 	}
 	
 	public ParameterSpec withName(String name) {
+		if (Objects.equals(this.name, name))
+			return this;
 		return new ParameterSpec(this.isFinal, this.type, this.varargs, name);
 	}
 	

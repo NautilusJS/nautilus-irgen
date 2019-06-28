@@ -15,6 +15,7 @@ import javax.annotation.processing.Filer;
 import javax.lang.model.element.Element;
 import javax.tools.JavaFileObject;
 
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
 public abstract class ClassSpec {
 	protected static String getNamespace(String pkg) {
 		if (pkg == null)

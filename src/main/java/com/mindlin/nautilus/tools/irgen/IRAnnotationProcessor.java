@@ -25,7 +25,8 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
-import com.mindlin.nautilus.tools.irgen.ir.Orderable;
+import com.mindlin.nautilus.tools.irgen.ir.ClassSpec.OutputInfo;
+import com.mindlin.nautilus.tools.irgen.util.Orderable;
 import com.mindlin.nautilus.tools.irgen.ir.TreeImplSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TypeName;

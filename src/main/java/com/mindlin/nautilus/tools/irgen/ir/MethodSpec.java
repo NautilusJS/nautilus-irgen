@@ -9,6 +9,8 @@ import javax.lang.model.type.TypeMirror;
 
 import com.mindlin.nautilus.tools.irgen.Utils;
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+import com.mindlin.nautilus.tools.irgen.util.Named;
 
 public abstract class MethodSpec implements Writable, Named {
 	public int flags;

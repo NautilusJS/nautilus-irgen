@@ -5,6 +5,8 @@ import java.util.Objects;
 import javax.lang.model.type.TypeMirror;
 
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+import com.mindlin.nautilus.tools.irgen.util.Named;
 
 public class FieldSpec implements Writable, Named {
 	public final int modifiers;

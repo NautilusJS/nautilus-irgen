@@ -10,6 +10,9 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.SimpleElementVisitor8;
 
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+import com.mindlin.nautilus.tools.irgen.util.Named;
+
 public class ClassName extends TypeName implements Named {
 	public static ClassName get(Class<?> clazz) {
 		String name = clazz.getSimpleName();

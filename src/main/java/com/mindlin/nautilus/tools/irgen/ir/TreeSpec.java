@@ -18,6 +18,7 @@ import javax.lang.model.type.TypeMirror;
 
 import com.mindlin.nautilus.tools.irgen.Logger;
 import com.mindlin.nautilus.tools.irgen.Utils;
+import com.mindlin.nautilus.tools.irgen.util.Orderable;
 
 public class TreeSpec implements Orderable<TypeName> {
 	public TypeElement source;

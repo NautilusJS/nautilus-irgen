@@ -30,6 +30,8 @@ import javax.lang.model.util.SimpleTypeVisitor8;
 
 import com.mindlin.nautilus.tools.irgen.Utils;
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
+import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
+import com.mindlin.nautilus.tools.irgen.util.Named;
 
 public abstract class TypeName implements Writable {
 	public static TypeName wrap(TypeMirror type) {
