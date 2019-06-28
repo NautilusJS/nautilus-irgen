@@ -120,8 +120,11 @@ public abstract class ClassSpec {
 	}
 	
 	public void write(Filer filer) throws IOException {
-		JavaFileObject file = filer.createSourceFile(getClassName().toString(), this.getSources());
-		try (Writer writer = file.openWriter()) {
+		JavaFileObject file;
+		synchronized (filer) {
+			file = filer.createSourceFile(getClassName().toString(), this.getSources());
+		}
+		try (Writer writer = new BufferedWriter(file.openWriter())) {
 			this.write(writer);
 		}
 	}
