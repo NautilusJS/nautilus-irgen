@@ -199,10 +199,9 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		
 		// Resolve getters
 		List<TreeSpec> parents = spec.getAllParents(tn -> this.specs.get(tn.toString()));
-		getLogger().warn("Ordered parents for %s: %s", spec.getName(), Utils.map(parents, parent -> parent.getName()));
-		Map<String, GetterSpec> gettersMap = new HashMap<>();
-		List<GetterSpec> resolvedGetters = new LinkedList<>();// LinkedList because we might be removing values from the middle
-		this.resolveGetters(resolvedGetters, gettersMap, parents, spec);
+		List<GetterSpec> resolvedGetters = this.resolveGetters(parents, spec);
+		for (GetterSpec getter : resolvedGetters)
+			impl.getters.put(getter.name, getter);
 		
 		if (Utils.isVerbose())
 			getLogger().warn("Getters for %s: %s", spec.getName(), resolvedGetters);
