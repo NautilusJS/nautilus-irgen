@@ -1,36 +1,50 @@
-package com.mindlin.nautilus.tools.irgen.ir;
+package com.mindlin.nautilus.tools.irgen.codegen;
 
 import java.io.Writer;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import javax.lang.model.type.TypeMirror;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import com.mindlin.nautilus.tools.irgen.IndentWriter;
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
+import com.mindlin.nautilus.tools.irgen.ir.ClassName;
+import com.mindlin.nautilus.tools.irgen.ir.TypeName;
+import com.mindlin.nautilus.tools.irgen.util.Named;
 
 public class CodeWriter extends IndentWriter {
-	Set<ClassName> staticImports = new HashSet<>();
-	Map<String, ClassName> imports;
+	Set<ClassName> imports = new HashSet<>();
 	protected String packageName = null;
 
-	public CodeWriter(Writer writer) {
+	public CodeWriter(@NonNull Writer writer) {
 		super(writer);
 	}
 
-	public CodeWriter(Writer writer, String spacer) {
+	public CodeWriter(@NonNull Writer writer, @NonNull String spacer) {
 		super(writer, spacer);
 	}
 	
+	public boolean isPackageImported(@NonNull String packageName) {
+		return (this.imports.contains(new ClassName(packageName, null)) || Objects.equals(this.packageName, packageName));
+	}
+	
+	public boolean isImported(ClassName clazz) {
+		return this.imports.contains(clazz);
+	}
+	
 	protected String resolveClass(ClassName clazz) {
-		if (this.staticImports.contains(clazz))
+		if (this.isImported(clazz))
 			return clazz.getSimpleName();
-		if (Objects.equals(this.packageName, clazz.getPackageName()))
+		else if (clazz.getEnclosingClass() != null)
+			return resolveClass(clazz.getEnclosingClass()) + "." + clazz.getSimpleName();
+		else if (this.isPackageImported(clazz.getPackageName()))
 			return clazz.getSimpleName();
-		return clazz.getQualifiedName();
+		else
+			return clazz.getQualifiedName();
 	}
 	
 	public void setPackage(String packageName) {
@@ -38,7 +52,7 @@ public class CodeWriter extends IndentWriter {
 	}
 	
 	public void addImport(ClassName name) {
-		this.staticImports.add(name);
+		this.imports.add(name);
 	}
 	
 	public void emitPackageDeclaration(String packageName) {
@@ -46,7 +60,10 @@ public class CodeWriter extends IndentWriter {
 	}
 	
 	public void emitImport(ClassName name) {
-		this.format("import %s;", name.getQualifiedName());
+		if (name.getSimpleName() == null)
+			this.format("import %s.*;", name.getPackageName());
+		else
+			this.format("import %s;", name.getQualifiedName());
 		this.setEOL();
 	}
 	
@@ -58,12 +75,24 @@ public class CodeWriter extends IndentWriter {
 		this.format("\"%s\"", value);//TODO: escape
 	}
 	
+	public void emitLiteral(char value) {
+		this.format("'%c'", value);//TODO: escape
+	}
+	
 	public void emitLiteral(int value) {
 		this.format("%d", value);
 	}
 	
+	public void emitLiteral(long value) {
+		this.format("%dL", value);
+	}
+	
 	public void emitLiteral(double value) {
 		this.format("%f", value);
+	}
+	
+	public void emitLiteral(float value) {
+		this.format("%ff", value);
 	}
 	
 	public void emitLiteral(Object value) {
@@ -73,21 +102,19 @@ public class CodeWriter extends IndentWriter {
 			this.emitLiteral((String) value);
 		} else if (value instanceof Integer) {
 			this.emitLiteral((int) value);
+		} else if (value instanceof Long) {
+			this.emitLiteral((long) value);
 		} else if (value instanceof Double) {
 			this.emitLiteral((double) value);
+		} else if (value instanceof Character) {
+			this.emitLiteral((char) value);
+		} else if (value instanceof Boolean) {
+			this.print(value.toString());
 		}
 	}
 	
-	public void emitType(ClassName value) {
-		String name = this.resolveClass(value);
-		this.print(name);
-	}
-	
 	public void emitType(TypeName value) {
-		if (value instanceof ClassName)
-			this.emitType((ClassName) value);
-		else
-			value.write(this);
+		value.write(this);
 	}
 	
 	public void emitType(TypeMirror value) {
@@ -113,7 +140,7 @@ public class CodeWriter extends IndentWriter {
 			throw new IllegalArgumentException("Can't cast to type");
 	}
 	
-	protected void emitArgument(String option, Object value) {
+	protected void emitArgument(@NonNull String option, Object value) {
 		switch (option) {
 			case "$":
 				this.append("$");
