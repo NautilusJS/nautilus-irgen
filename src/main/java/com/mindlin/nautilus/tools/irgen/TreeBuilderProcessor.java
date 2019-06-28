@@ -2,27 +2,31 @@ package com.mindlin.nautilus.tools.irgen;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.Elements;
 
-import com.mindlin.nautilus.tools.irgen.ir.Orderable;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.TreeSpec.GetterSpec;
+import com.mindlin.nautilus.tools.irgen.util.Orderable;
 import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 
+@NonNullByDefault
 public class TreeBuilderProcessor extends AnnotationProcessorBase {
 	protected static TreeSpec.@Nullable Kind getKind(@Nullable DeclaredType annotation) {
 		if (annotation == null)
@@ -127,9 +131,23 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 		
+		
 		// Toposort getters
 		try {
-			getters = Orderable.sorted(getters);
+			Set<GetterSpec> marked = new HashSet<>();//TODO: concurrency?
+			
+			getters = Orderable.sorted(getters, available -> {
+				// This is bad because this function has side effects.
+				if (available.size() > 1) {
+					for (GetterSpec spec : available) {
+						if (marked.add(spec)) {
+							getLogger().withTarget(spec.target)
+								.warn("Unstable ordering (parallel = %s)", Utils.map(available, g -> g.fName));
+						}
+					}
+				}
+				return Orderable.selectAny(available);
+			});
 		} catch (IllegalArgumentException e) {
 			// Toposort failed
 			getLogger().withTarget(target).error("Error sorting getters: " + e.getMessage());
