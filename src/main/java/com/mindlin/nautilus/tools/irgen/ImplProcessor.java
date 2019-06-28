@@ -3,12 +3,8 @@ package com.mindlin.nautilus.tools.irgen;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -116,26 +112,18 @@ public class ImplProcessor extends AnnotationProcessorBase {
 				.collect(Collectors.toList());
 	}
 	
-	protected void buildFields(Map<String, FieldSpec> fields, TreeSpec spec) {
+	protected void buildFields(List<TreeSpec> parents, Map<String, FieldSpec> fields, TreeSpec spec) {
 		// Recurse through parents first, so they get overridden.
-		for (TypeName parent : spec.parents) {
-			TreeSpec parentSpec = this.specs.get(parent.toString());//TODO: fix?
-			if (parentSpec == null) {
-				continue;
-			}
-			this.buildFields(fields, parentSpec);
-		}
 		
-		for (GetterSpec getter : spec.getters) {
-			FieldSpec field = this.getterToField(getter);
-			if (getter.override)
+		for (TreeSpec parent : parents) {
+			for (GetterSpec getter : parent.getters) {
+				FieldSpec field = this.getterToField(getter);
 				fields.put(field.name, field);
-			else if (fields.put(field.name, field) != null)
-				getLogger().warn("Duplicate field '%s' on %s (no override)", field.name, spec.getName());
+			}
 		}
 	}
 	
-	protected MethodSpec makeGetter(TreeImplSpec impl, GetterSpec getter, TreeImplSpec parent) {
+	protected MethodSpec makeGetter(TreeImplSpec impl, GetterSpec getter) {
 		int flags = 0;
 		if (getter.hash)
 			flags |= AbstractTreeSpec.MF_HASH;
@@ -146,8 +134,12 @@ public class ImplProcessor extends AnnotationProcessorBase {
 			//TODO: fix
 		}
 		
-		if (parent != null && parent.getters.containsKey(getter.name))
-			return this.makeOverrideGetter(flags, getter, parent.getters.get(getter.name));
+		if (impl.resolvedParent != null) {
+			final GetterSpec overrideTarget = impl.resolvedParent.getters.getOrDefault(getter.name, null);
+			if (overrideTarget != null) {
+				return this.makeOverrideGetter(flags, getter, overrideTarget);
+			}
+		}
 		
 		// Generate field getter
 		FieldSpec field = impl.fields.get(getter.fName);
@@ -211,14 +203,14 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		// Determine which fields we have to declare
 		// We only declare a field if it doesn't exist in our parent
 		
-		if (parentSpec != null)
-			impl.fields.putAll(parentSpec.fields);
-		this.buildFields(impl.fields, spec);
+		if (resolvedParent != null)
+			impl.fields.putAll(resolvedParent.fields);
+		this.buildFields(parents, impl.fields, spec);
 		// Drop fields that exist in superclass
 		Map<String, FieldSpec> localFields;
-		if (parentSpec != null) {
+		if (resolvedParent != null) {
 			localFields = new LinkedHashMap<>(impl.fields);
-			for (String parentField : parentSpec.fields.keySet())
+			for (String parentField : resolvedParent.fields.keySet())
 				localFields.remove(parentField);
 		} else {
 			localFields = impl.fields;
@@ -227,6 +219,7 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		
 		// Generate getter methods
 		for (GetterSpec getter : resolvedGetters) {
+			Logger getterLogger = getLogger().withTarget(getter.target);
 			if (Utils.isVerbose())
 				getLogger().warn("Add getter %s to %s", getter.name, spec.getName());
 			MethodSpec method = this.makeGetter(impl, getter);
