@@ -1,17 +1,27 @@
 package com.mindlin.nautilus.tools.irgen;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.Writer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -25,6 +35,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
+import javax.tools.JavaFileObject;
+import javax.tools.Diagnostic.Kind;
 
 import com.mindlin.nautilus.tools.irgen.ir.ClassSpec.OutputInfo;
 import com.mindlin.nautilus.tools.irgen.util.Orderable;
