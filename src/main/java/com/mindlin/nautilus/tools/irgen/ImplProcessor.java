@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
@@ -35,8 +34,8 @@ public class ImplProcessor extends AnnotationProcessorBase {
 	final Map<String, TreeSpec> specs;
 	final Map<String, TreeImplSpec> impls;
 	
-	public ImplProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv, Map<String, TreeSpec> specs, Map<String, TreeImplSpec> impls) {
-		super(procEnv, annotation, roundEnv);
+	public ImplProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, Map<String, TreeSpec> specs, Map<String, TreeImplSpec> impls) {
+		super(procEnv, annotation);
 		this.specs = specs;
 		this.impls = impls;
 	}
