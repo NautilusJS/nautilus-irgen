@@ -37,7 +37,6 @@ import com.mindlin.nautilus.tools.irgen.ir.TypeName;
 @SupportedAnnotationTypes({IRTypes.TREE_NOIMPL, IRTypes.TREE_ADT, IRTypes.TREE_IMPL})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class IRAnnotationProcessor extends AbstractProcessor {
-	
 	protected Logger getLogger() {
 		return new Logger(this.processingEnv.getMessager());
 	}
@@ -88,7 +87,7 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 				}
 				return true;
 			})
-			.collect(Collectors.toMap(Utils::getName, target -> {
+			.collect(Collectors.toConcurrentMap(Utils::getName, target -> {
 				try {
 					return processor.buildTreeSpec((TypeElement) target);
 				} catch (Exception e) {
