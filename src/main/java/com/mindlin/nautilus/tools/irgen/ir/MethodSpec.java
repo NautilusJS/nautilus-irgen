@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import javax.lang.model.type.TypeMirror;
 
+import com.mindlin.nautilus.tools.irgen.IRTypes;
 import com.mindlin.nautilus.tools.irgen.Utils;
 import com.mindlin.nautilus.tools.irgen.Utils.Writable;
 import com.mindlin.nautilus.tools.irgen.codegen.CodeWriter;
@@ -66,6 +67,7 @@ public abstract class MethodSpec implements Writable, Named {
 
 		@Override
 		protected void writeBefore(CodeWriter out) {
+			out.println("/** {@inheritDoc} */");
 			out.println("@Override");
 			super.writeBefore(out);
 		}
@@ -137,6 +139,12 @@ public abstract class MethodSpec implements Writable, Named {
 		public TypeName getReturnType() {
 			return this.field.getType();
 		}
+		
+		@Override
+		protected void writeBefore(CodeWriter out) {
+			super.writeBefore(out);
+			if (this.immutable && Utils.isNonNull(this.field.type, false))
+				out.println("@SuppressWarnings(\"null\")");
 		}
 		
 		@Override
