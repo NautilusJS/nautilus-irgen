@@ -18,6 +18,9 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import com.mindlin.nautilus.tools.irgen.ir.AbstractTreeSpec;
 import com.mindlin.nautilus.tools.irgen.ir.ClassName;
 import com.mindlin.nautilus.tools.irgen.ir.FieldSpec;
