@@ -92,7 +92,6 @@ public class ImplProcessor extends AnnotationProcessorBase {
 					}
 				}
 			}
-			getters.add(getter);
 		}
 		
 		for (String warning : overrideWarnings.values())
