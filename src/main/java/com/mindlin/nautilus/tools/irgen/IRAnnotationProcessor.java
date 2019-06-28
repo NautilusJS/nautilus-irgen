@@ -102,14 +102,15 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 				}
 				return true;
 			})
-			.collect(Collectors.toConcurrentMap(Utils::getName, target -> {
+			.map(target -> {
 				try {
 					return processor.buildTreeSpec((TypeElement) target);
 				} catch (Exception e) {
 					getLogger().withTarget(target).error("Error reading @Tree.%s: %s", annotation.getSimpleName(), e.getLocalizedMessage());
 					throw e;
 				}
-			}));
+			})
+			.collect(Collectors.toConcurrentMap(target -> Utils.getName(target.source), target -> target));
 	}
 	
 	protected Set<String> getUnprocessed(TypeElement adt, RoundEnvironment roundEnv, Map<String, TreeSpec> allSpecs) {
