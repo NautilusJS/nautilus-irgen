@@ -174,15 +174,10 @@ public abstract class MethodSpec implements Writable, Named {
 
 		@Override
 		protected void writeBody(CodeWriter out) {
-			out.emit("$T result = super.$N();", this.type, this.name);
-			out.println();
-			
-			if (this.shouldCheckForNull()) {
-				out.emit("$T.requireNonNull(result);", Objects.class);
-				out.println();
-			}
-			
-			out.println("return result;");
+			if (this.shouldCheckForNull())
+				out.emit("return $T.requireNonNull(($T) super.$N());", Objects.class, this.type, this.name);
+			else
+				out.emit("return ($T) super.$N();", this.type, this.name);
 		}
 	}
 }
