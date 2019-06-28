@@ -64,40 +64,38 @@ public class ImplProcessor extends AnnotationProcessorBase {
 		return new FieldSpec(Modifier.PROTECTED | Modifier.FINAL, getter.type, getter.fName);
 	}
 	
-	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, List<TreeSpec> parents, TreeSpec spec) {
-		Deque<TreeSpec> queue = new LinkedList<>();
-		Set<TreeSpec> visited = new HashSet<>();
-		queue.add(spec);
-		visited.add(spec);
-		Consumer<TreeSpec> enqueueFn = parent -> {
-			if (visited.add(parent))
-				queue.add(parent);
-		};
-		
-		while (!queue.isEmpty()) {
-			TreeSpec parent = queue.pop();
-			this.resolveGetters(getters, gettersMap, parent, spec, enqueueFn);
-		}
+	protected @Nullable TypeElement resolveSource(@NonNull TypeName parent) {
+		String parentName = parent.toString();//TODO: fix?
+		TreeImplSpec parentImpl = this.impls.get(parentName);
+		if (parentImpl != null)
+			return parentImpl.source;
+		TreeSpec parentSpec = this.specs.get(parentName);
+		if (parentSpec != null)
+			return parentSpec.source;
+		return null;
 	}
 	
-	protected void resolveGetters(List<GetterSpec> getters, Map<String, GetterSpec> gettersMap, TreeSpec spec, TreeSpec base, Consumer<TreeSpec> enqueueFn) {
-		//TODO: fix parent traversal order
-		for (TypeName parent : spec.parents) {
-			TreeSpec parentSpec = this.specs.get(parent.toString());
-			if (parentSpec == null)
-				continue;
-			enqueueFn.accept(parentSpec);
-		}
-		
-		for (GetterSpec getter : spec.getters) {
-			GetterSpec old = gettersMap.put(getter.name, getter);
-			if (old != null) {
-				getters.remove(old);
-				if (!getter.override)
-					getLogger().warn("Override getter '%s' on %s from %s/%s (%s)", getter.name, base.getName(), spec.source.getSimpleName(), old.target.getEnclosingElement().getSimpleName(), getter.override);
+	protected List<GetterSpec> resolveGetters(List<TreeSpec> parents, TreeSpec spec) {
+		Map<String, GetterSpec> gettersMap = new LinkedHashMap<>();
+		Map<String, String> overrideWarnings = new HashMap<>();
+		for (TreeSpec parent : parents) {
+			for (GetterSpec getter : parent.getters) {
+				GetterSpec old = gettersMap.put(getter.name, getter);
+				if (old != null) {
+					if (getter.override) {
+						overrideWarnings.remove(getter.name);
+					} else {
+						overrideWarnings.put(getter.name, String.format("Override getter '%s' on %s from %s -> %s (%s)", getter.name, spec.getName(), parent.source.getSimpleName(), old.target.getEnclosingElement().getSimpleName(), getter.override));
+					}
+				}
 			}
 			getters.add(getter);
 		}
+		
+		for (String warning : overrideWarnings.values())
+			getLogger().warn(warning);
+		
+		return new ArrayList<>(gettersMap.values());
 	}
 	
 	protected List<GetterSpec> gettersToDeclare(List<GetterSpec> getters, TreeImplSpec parent) {
