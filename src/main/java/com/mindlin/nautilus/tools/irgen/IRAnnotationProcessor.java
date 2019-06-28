@@ -178,12 +178,112 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		return impls;
 	}
 	
+	protected void writeOutputs(Iterable<TreeImplSpec> impls) {
+		Filer filer = this.processingEnv.getFiler();
+		
+		for (TreeImplSpec impl : impls) {
 			try {
 				specImpl.write(this.processingEnv.getFiler());
 			} catch (IOException e) {
-				getLogger().error("Error writing impl %s: %s", specImpl.getClassName(), e.getMessage());
+				getLogger().error("Error writing impl %s: %s", impl.getClassName(), e.getMessage());
 				e.printStackTrace();
 				continue;
+			} catch (Exception e) {
+				getLogger().error("Error writing impl %s: %s", impl.getClassName(), e.getLocalizedMessage());
+				throw e;
+			}
+		}
+	}
+	
+	protected void writeOutputsMP(Collection<TreeImplSpec> impls) {
+		Filer filer = this.processingEnv.getFiler();
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors() * 2 - 1);
+		threads = Math.min(threads, impls.size());
+		getLogger().warn("Running on %d threads", threads);
+		
+		Queue<TreeImplSpec> iQueue = new LinkedBlockingQueue<>(impls);
+		BlockingQueue<OutputInfo> oQueue = new LinkedBlockingQueue<>();
+		AtomicInteger finishCt = new AtomicInteger(threads);
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		for (int i = 0; i < threads; i++)
+			executor.submit(new WriterThread(iQueue, oQueue, finishCt));
+		
+		while (finishCt.get() > 0 || !oQueue.isEmpty()) {
+			OutputInfo info;
+			try {
+				info = oQueue.poll(1, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				getLogger().printStackTrace(e);
+				continue;
+			}
+			if (info == null)
+				continue;
+			
+			JavaFileObject file;
+			try {
+				file = filer.createSourceFile(info.className, info.sources);
+			} catch (FilerException e) {
+				getLogger().error("Error creating file (Filer error) for impl %s: %s", info.className, e.getMessage());
+				continue;
+			} catch (IOException e) {
+				getLogger().error("Error creating file (IO error) for impl %s: %s", info.className, e.getMessage());
+				continue;
+			} catch (Exception e) {
+				// Unexpected
+				getLogger().error("Error creating file (unknown) for impl %s: %s", info.className, e.getMessage());
+				throw e;
+			}
+			
+			try (Writer w = file.openWriter()) {
+				w.write(info.value);
+			} catch (IOException e) {
+				getLogger().error("Error writing impl %s: %s", info.className, e.getMessage());
+				e.printStackTrace();
+			} catch (Exception e) {
+				getLogger().error("Error writing impl %s: %s", info.className, e.getLocalizedMessage());
+				throw e;
+			}
+		}
+		executor.shutdown();
+		
+	}
+	
+	class WriterThread implements Runnable {
+		final Queue<TreeImplSpec> inQueue;
+		final Queue<OutputInfo> outQueue;
+		final AtomicInteger finishCt;
+		
+		public WriterThread(Queue<TreeImplSpec> inQueue, Queue<OutputInfo> outQueue, AtomicInteger finishCt) {
+			this.inQueue = inQueue;
+			this.outQueue = outQueue;
+			this.finishCt = finishCt;
+		}
+
+		@Override
+		public void run() {
+			try {
+				while (!Thread.interrupted()) {
+					TreeImplSpec impl = inQueue.poll();
+					if (impl == null)
+						return;
+					
+					OutputInfo out;
+					try {
+						out = impl.writeMP();
+					} catch (IOException e) {
+						getLogger().error("io Error writing impl %s: %s %s", impl.getClassName(), e.getClass(), e.getMessage());
+						getLogger().printStackTrace(e);
+						continue;
+					} catch (Exception e) {
+						getLogger().error("Error writing impl %s: %s %s/%s", impl.getClassName(), e.getClass(), e.getMessage(), e.getCause());
+						getLogger().printStackTrace(e);
+						throw e;
+					}
+					
+					this.outQueue.add(out);
+				}
+			} finally {
+				this.finishCt.decrementAndGet();
 			}
 		}
 	}
