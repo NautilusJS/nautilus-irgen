@@ -1,10 +1,10 @@
 package com.mindlin.nautilus.tools.irgen.ir;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -102,8 +102,8 @@ public class TreeSpec implements Orderable<TypeName> {
 		
 		// Ordering
 		public boolean first;
-		public String before;
-		public String after;
+		public final Set<String> before = new LinkedHashSet<>();
+		public final Set<String> after = new LinkedHashSet<>();
 		public boolean last;
 		
 		@Override
@@ -115,9 +115,9 @@ public class TreeSpec implements Orderable<TypeName> {
 				props.add("optional");
 			if (this.first)
 				props.add("first");
-			if (this.before != null)
+			if (this.before != null && !this.before.isEmpty())
 				props.add("before=" + this.before);
-			if (this.after != null)
+			if (this.after != null && !this.after.isEmpty())
 				props.add("after=" + this.after);
 			if (this.last)
 				props.add("last");
@@ -146,16 +146,12 @@ public class TreeSpec implements Orderable<TypeName> {
 
 		@Override
 		public Set<String> getBefore() {
-			if (this.after == null)
-				return Collections.emptySet();
-			return new HashSet<>(Arrays.asList(this.after));
+			return this.after;
 		}
 
 		@Override
 		public Set<String> getAfter() {
-			if (this.before == null)
-				return Collections.emptySet();
-			return new HashSet<>(Arrays.asList(this.before));
+			return this.before;
 		}
 
 		@Override
