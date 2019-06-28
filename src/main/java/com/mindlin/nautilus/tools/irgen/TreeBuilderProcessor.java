@@ -45,8 +45,17 @@ public class TreeBuilderProcessor extends AnnotationProcessorBase {
 	
 	private final TreeSpec.@Nullable Kind kind;
 	
-	public TreeBuilderProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, RoundEnvironment roundEnv) {
-		super(procEnv, annotation, roundEnv);
+	public TreeBuilderProcessor(ProcessingEnvironment procEnv, DeclaredType annotation) {
+		this(procEnv, annotation, getKind(annotation));
+	}
+	
+	public TreeBuilderProcessor(ProcessingEnvironment procEnv, TreeSpec.Kind kind) {
+		this(procEnv, null, kind);
+	}
+	
+	public TreeBuilderProcessor(ProcessingEnvironment procEnv, DeclaredType annotation, TreeSpec.Kind kind) {
+		super(procEnv, annotation);
+		this.kind = kind;
 	}
 	
 	protected TreeSpec.Kind getKind() {
