@@ -333,34 +333,48 @@ public class IRAnnotationProcessor extends AbstractProcessor {
 		IRAnnotationProcessor.main();
 		Instant start = Instant.now();
 		
+		if (annotations.isEmpty())
+			return true;
+		
 		if (Utils.isVerbose())
 			getLogger().note("Hello, world! %s", annotations);
 		
 		Map<String, TypeElement> annotationLUT = annotations.stream()
 				.collect(Collectors.toMap(annotation -> annotation.getQualifiedName().toString(), x -> x));
 		
-		Map<String, TreeSpec> niSpecs = Collections.emptyMap(), iSpecs = Collections.emptyMap();
-		
-		TypeElement noImpl = annotationLUT.get(IRTypes.TREE_NOIMPL);
-		if (noImpl != null)
-			niSpecs = this.processTrees(noImpl, roundEnv);
-		TypeElement adt = annotationLUT.get(IRTypes.TREE_ADT);
-		if (adt != null)
-			;
+		Map<String, TreeSpec> specs = new HashMap<>();
+
 		TypeElement impl = annotationLUT.get(IRTypes.TREE_IMPL);
 		if (impl != null)
-			iSpecs = this.processTrees(impl, roundEnv);
+			specs.putAll(this.processTrees(impl, roundEnv));
+		TypeElement adt = annotationLUT.get(IRTypes.TREE_ADT);
+		if (adt != null)
+			specs.putAll(this.processTrees(adt, roundEnv));
+		TypeElement noImpl = annotationLUT.get(IRTypes.TREE_NOIMPL);
+		if (noImpl != null)
+			specs.putAll(this.processTrees(noImpl, roundEnv));
 		
-		if (!iSpecs.isEmpty()) {
-//			if (Utils.isVerbose())
-//				getLogger().note("niSpecs=%s / iSpecs=%s", niSpecs, iSpecs);
-			
-			getLogger().note("Missing specs=%s", getUnprocessed(adt, roundEnv, niSpecs, iSpecs));
-			
-			if (impl != null)
-				this.processImplOutputs(impl, roundEnv, niSpecs, iSpecs);
 		Instant postproc = Instant.now();
+		
+		Set<String> missing = getUnprocessed(adt, roundEnv, specs);
+		if (!missing.isEmpty())
+			getLogger().note("Missing specs=%s", missing);
+		
+		// Log ParameterTree order, because something's funky about the ordering there
+		TreeSpec paramSpec = specs.get("com.mindlin.nautilus.tree.ParameterTree");
+		if (paramSpec != null) {
+			getLogger().warn("Specs for %s: %s", paramSpec.getName().toString(), paramSpec.getters);
+		}
+		
 		Instant buildDone;
+		if (impl != null) {
+			Map<String, TreeImplSpec> impls = this.processImplOutputs(impl, specs);
+			buildDone = Instant.now();
+//			this.writeOutputs(impls.values());
+			this.writeOutputsMP(impls.values());
+		} else {
+			getLogger().warn("No outputs");
+			buildDone = Instant.now();
 		}
 		
 		Instant end = Instant.now();
