@@ -232,4 +232,85 @@ public class Utils {
 	public static interface EFunction<T, E extends Exception, R> {
 		R apply(T t) throws E;
 	}
+	
+	protected static class LazyAnnotationValueMap<T> extends AbstractMap<String, T> {
+		private final Object NULL_REF = new Object();
+		protected final Map<String, Object> delegate = new HashMap<>();
+		protected final Map<? extends ExecutableElement, ? extends T> source;
+		protected Iterator<? extends Map.Entry<? extends ExecutableElement, ? extends T>> sourceIter = null;
+		
+		public LazyAnnotationValueMap(Map<? extends ExecutableElement, ? extends T> source) {
+			this.source = source;
+		}
+		
+		protected Object ref(T value) {
+			return value == null ? NULL_REF : value;
+		}
+		
+		@SuppressWarnings("unchecked")
+		protected T deref(Object ref) {
+			return ref == NULL_REF ? null : ((T) ref);
+		}
+		
+		/** Should only be called from {@link #computeValue(String)} */
+		protected @Nullable String computeNext() {
+			if (!this.sourceIter.hasNext())
+				return null;
+			Map.Entry<? extends ExecutableElement, ? extends T> entry = sourceIter.next();
+			String key = entry.getKey().getSimpleName().toString();
+			this.delegate.put(key, entry.getValue());
+			return key;
+		}
+		
+		protected void computeValue(String key) {
+			synchronized (this.delegate) {
+				if (this.sourceIter == null)
+					this.sourceIter = this.source.entrySet().iterator();
+				String computedKey;
+				while ((computedKey = this.computeNext()) != null && !Objects.equals(key, computedKey))
+					;
+			}
+		}
+		
+		@Override
+		public int size() {
+			return source.size();
+		}
+		
+		@Override
+		public T get(Object key) {
+			if (key instanceof String)
+				return get((String) key);
+			return null;
+		}
+		
+		public T get(String key) {
+			Object result = this.delegate.getOrDefault(key, null);
+			if (result == null) {
+				// Ensure key is computed
+				this.computeValue(key);
+			}
+			return deref(result);
+		}
+		
+		@Override
+		public boolean containsKey(Object key) {
+			return (key instanceof String) && containsKey((String) key);
+		}
+		
+		public boolean containsKey(String key) {
+			if (this.delegate.containsKey(key))
+				return true;
+			this.computeValue(key);
+			return this.delegate.containsKey(key);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public Set<Entry<String, T>> entrySet() {
+			this.computeValue(null);
+			//TODO: fix?
+			return (Set<Entry<String, T>>) (Object) this.delegate.entrySet();
+		}
+	}
 }
